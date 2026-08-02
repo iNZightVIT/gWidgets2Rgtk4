@@ -25,13 +25,31 @@ NULL
   NULL
 }
 
+## Hidden fallback so GtkDialog is never mapped without a transient parent.
+.dialog_fallback_env <- new.env(parent = emptyenv())
+
+.dialog_ensure_parent <- function(parent = NULL) {
+  win <- .dialog_parent_window(parent)
+  if (!is.null(win))
+    return(win)
+  fb <- .dialog_fallback_env$window
+  if (is.null(fb) ||
+      inherits(try(gtkWindowGetTitle(fb), silent = TRUE), "try-error")) {
+    fb <- gtkWindowNew()
+    gtkWindowSetTitle(fb, "gWidgets2Rgtk4")
+    gtkWidgetSetVisible(fb, FALSE)
+    .dialog_fallback_env$window <- fb
+  }
+  fb
+}
+
 GDialog <- setRefClass(
   "GDialog",
   contains = "GContainer",
   methods = list(
     initialize = function(toolkit = NULL, msg = "", title = "", icon = "info",
                           parent = NULL, ...) {
-      .parent <- .dialog_parent_window(parent)
+      .parent <- .dialog_ensure_parent(parent)
       widget <<- gtkMessageDialogNew(
         parent = .parent,
         flags = 1L, ## MODAL
@@ -152,11 +170,10 @@ GBasicDialog <- setRefClass(
   methods = list(
     initialize = function(toolkit = NULL, title = "Dialog", parent = NULL,
                           do.buttons = TRUE, handler = NULL, action = NULL, ...) {
-      .parent <- .dialog_parent_window(parent)
+      .parent <- .dialog_ensure_parent(parent)
       dlg <- gtkDialogNew()
       gtkWindowSetTitle(dlg, title)
-      if (!is.null(.parent))
-        gtkWindowSetTransientFor(dlg, .parent)
+      gtkWindowSetTransientFor(dlg, .parent)
       gtkWindowSetModal(dlg, TRUE)
       if (do.buttons) {
         gtkDialogAddButton(dlg, "OK", -5L)

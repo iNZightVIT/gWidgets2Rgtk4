@@ -20,6 +20,13 @@ test_that(".dialog_parent_window resolves parents", {
   dispose(w)
 })
 
+test_that(".dialog_ensure_parent always returns a GtkWindow", {
+  expect_true(inherits(.dialog_ensure_parent(NULL), "GtkWindow"))
+  w <- gwindow("parent2", visible = FALSE)
+  expect_identical(.dialog_ensure_parent(w), getWidget(w))
+  dispose(w)
+})
+
 test_that("gmessage constructs and runs with OK response", {
   dlg <- GMessage$new(tk, msg = c("hello", "world"), title = "t", icon = "info")
   expect_true(is(dlg, "GMessage"))
