@@ -60,9 +60,9 @@ GRadio <- setRefClass(
       }
     },
     get_length = function(...) length(widgets),
-    get_enabled = function() gtkWidgetGetSensitive(block),
+    get_enabled = function() as.logical(gtkWidgetGetSensitive(block)),
     set_enabled = function(value) gtkWidgetSetSensitive(block, as.logical(value)),
-    get_visible = function() gtkWidgetGetVisible(block),
+    get_visible = function() as.logical(gtkWidgetGetVisible(block)),
     set_visible = function(value) gtkWidgetSetVisible(block, as.logical(value))
   )
 )

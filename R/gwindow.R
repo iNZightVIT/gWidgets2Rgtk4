@@ -73,7 +73,7 @@ GWindow <- setRefClass(
       gtkBoxAppend(outer, statusbar_area)
       gtkWindowSetChild(widget, outer)
     },
-    get_value = function(...) gtkWindowGetTitle(widget),
+    get_value = function(...) as.character(gtkWindowGetTitle(widget)),
     set_value = function(value, ...) {
       gtkWindowSetTitle(widget, paste(value, collapse = " "))
     },

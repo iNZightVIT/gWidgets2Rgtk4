@@ -75,7 +75,8 @@ GGroupBase <- setRefClass(
       else
         out
     },
-    get_value = function(...) gtkBoxGetSpacing(widget),
+    get_length = function(...) length(children),
+    get_value = function(...) as.integer(gtkBoxGetSpacing(widget)),
     set_value = function(value, ...) {
       gtkBoxSetSpacing(widget, as.integer(value)[1])
     },

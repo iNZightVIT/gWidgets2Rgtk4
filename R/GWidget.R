@@ -27,7 +27,7 @@ GWidgetWithItems <- setRefClass(
     },
     get_enabled = function() {
       if (length(widgets))
-        gtkWidgetGetSensitive(widgets[[1]])
+        as.logical(gtkWidgetGetSensitive(widgets[[1]]))
       else
         TRUE
     },

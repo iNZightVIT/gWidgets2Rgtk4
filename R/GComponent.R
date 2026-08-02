@@ -31,16 +31,19 @@ GComponent <- setRefClass(
       cat(sprintf("Object of class %s\n", class(.self)[1]))
     },
     get_length = function(...) 1L,
-    get_visible = function() gtkWidgetGetVisible(widget),
+    get_visible = function() as.logical(gtkWidgetGetVisible(widget)),
     set_visible = function(value) gtkWidgetSetVisible(widget, as.logical(value)),
     get_focus = function() FALSE,
     set_focus = function(value) {
       if (isTRUE(value) && gtkWidgetGetCanFocus(block))
         gtkWidgetGrabFocus(block)
     },
-    get_enabled = function() gtkWidgetGetSensitive(widget),
+    get_enabled = function() as.logical(gtkWidgetGetSensitive(widget)),
     set_enabled = function(value) gtkWidgetSetSensitive(widget, as.logical(value)),
-    get_tooltip = function(...) gtkWidgetGetTooltipText(widget),
+    get_tooltip = function(...) {
+      tip <- gtkWidgetGetTooltipText(widget)
+      if (is.null(tip)) "" else as.character(tip)
+    },
     set_tooltip = function(value) {
       gtkWidgetSetTooltipText(widget, paste(value, collapse = "\n"))
     },
@@ -51,12 +54,13 @@ GComponent <- setRefClass(
     get_attr = function(key) {
       if (missing(key))
         ls(.e)
+      else if (exists(key, envir = .e, inherits = FALSE))
+        get(key, envir = .e, inherits = FALSE)
       else
-        attr(.e, key)
+        NULL
     },
     set_attr = function(key, value) {
-      tmp <- .e
-      attr(tmp, key) <- value
+      assign(key, value, envir = .e)
     },
     is_extant = function() {
       if (is.null(block) || is(block, "uninitializedField"))
