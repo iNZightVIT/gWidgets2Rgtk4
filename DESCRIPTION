@@ -1,0 +1,37 @@
+Package: gWidgets2Rgtk4
+Type: Package
+Title: Implementation of gWidgets2 for the Rgtk4 Package
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Tom", "Elliott", role = c("aut", "cre"),
+           email = "tom.elliott@auckland.ac.nz"),
+    person("John", "Verzani", role = "ctb",
+           comment = "gWidgets2RGtk2 architecture and API patterns"))
+Description: Implements the 'gWidgets2' API for 'Rgtk4' (GTK4).
+    Provides a toolkit backend that preserves the gWidgets2 public
+    interface while using modern GTK4 bindings.
+License: GPL-3
+URL: https://github.com/iNZightVIT/gWidgets2Rgtk4
+BugReports: https://github.com/iNZightVIT/gWidgets2Rgtk4/issues
+Depends:
+    methods,
+    R (>= 4.0.0)
+Imports:
+    memoise,
+    Rgtk4,
+    gWidgets2 (>= 1.0.7)
+Suggests:
+    testthat (>= 3.0.0)
+Encoding: UTF-8
+LazyLoad: yes
+Collate:
+    'gWidgets2Rgtk4-package.R'
+    'misc.R'
+    'gtk-misc.R'
+    'GComponent.R'
+    'GContainer.R'
+    'GWidget.R'
+    'aaa.R'
+    'startup.R'
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3
