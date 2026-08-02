@@ -5,5 +5,5 @@
 }
 
 .onAttach <- function(libname, pkgname) {
-  ## Icon loading lands with icons.R in Phase 1
+  load_gwidget_icons()
 }

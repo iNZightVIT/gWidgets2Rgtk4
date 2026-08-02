@@ -1,14 +1,20 @@
-## Smoke-load the Rgtk4 toolkit backend for gWidgets2.
-## Full widget demos arrive with Phase 1 constructors.
+## Smoke demo for the Rgtk4 toolkit backend of gWidgets2.
 require(gWidgets2)
 options(guiToolkit = "Rgtk4")
 
-tk <- guiToolkit("Rgtk4")
-stopifnot(is(tk, "guiWidgetsToolkitRgtk4"))
-message("guiToolkit Rgtk4 ready (", class(tk)[1], ").")
+w <- gwindow("gWidgets2Rgtk4 smoke", width = 360, height = 280)
+g <- gvbox(container = w, spacing = 8)
+glabel("Phase 1 smoke dialog", container = g)
+e <- gedit("edit me", container = g)
+cb <- gcheckbox("checked?", checked = TRUE, container = g)
+out <- glabel("", container = g)
 
-ex <- system.file("examples", "run_examples.R", package = "gWidgets2")
-if (nzchar(ex) && interactive()) {
-  ## Only useful once Phase 1 widgets are implemented.
-  message("To exercise gWidgets2 examples after Phase 1:\n  source(\"", ex, "\")")
-}
+gbutton("Update label", container = g, handler = function(h, ...) {
+  svalue(out) <- sprintf("edit=%s; check=%s", svalue(e), svalue(cb))
+})
+
+gbutton("Close", container = g, handler = function(h, ...) {
+  dispose(w)
+})
+
+message("Smoke window open. Click Update / Close to exercise handlers.")

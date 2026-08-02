@@ -14,7 +14,8 @@ library(gWidgets2)
 
 ## Status
 
-Early scaffold. See [docs/](docs/) for plan, architecture, API mapping, and widget inventory.
+Phase 1 core path implemented (containers, basic controls, dialogs, files, timer, action).
+Menus, graphics, tables/gdf, and related chrome are Phase 2. See [docs/](docs/).
 
 ## Documentation
 

@@ -8,56 +8,56 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 
 | Component | Source (RGtk2 backend) | ~LOC | Difficulty | Phase | Status |
 |-----------|------------------------|------|------------|-------|--------|
-| Package / NAMESPACE | `gWidgets2RGtk2-package.R` | — | Low | 0 | wip |
-| Toolkit class | `misc.R` | 30 | Low | 0 | todo |
-| Startup / init | `startup.R` | 12 | Low | 0 | todo |
-| gtk helpers | `gtk-misc.R` | 146 | Medium | 1 | todo |
-| `GComponent` | `GComponent.R` | 511 | High | 1 | todo |
-| `GContainer` | `GContainer.R` | — | Medium | 1 | todo |
-| `GWidget` | `GWidget.R` | — | Medium | 1 | todo |
-| Icons | `icons.R` | 138 | Medium | 1 | todo |
-| Doc stubs | `aaa.R` | — | Low | 1 | todo |
+| Package / NAMESPACE | `gWidgets2RGtk2-package.R` | — | Low | 0 | done |
+| Toolkit class | `misc.R` | 30 | Low | 0 | done |
+| Startup / init | `startup.R` | 12 | Low | 0 | done |
+| gtk helpers | `gtk-misc.R` | 146 | Medium | 1 | done |
+| `GComponent` | `GComponent.R` | 511 | High | 1 | done |
+| `GContainer` | `GContainer.R` | — | Medium | 1 | done |
+| `GWidget` | `GWidget.R` | — | Medium | 1 | done |
+| Icons | `icons.R` | 138 | Medium | 1 | done |
+| Doc stubs | `aaa.R` | — | Low | 1 | done |
 
 ## Phase 1 — containers
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
-| `gwindow` | `gwindow.R` | 211 | Medium | todo | `close-request`, `SetChild`, `Present` |
-| `ggroup` / `gvbox` | `ggroup.R` | 167 | Medium | todo | `gtkBoxNew` / Append; scroll via `GtkScrolledWindow` |
-| `gframe` | `gframe.R` | — | Low | todo | `gtkFrameSetChild` |
-| `gexpandgroup` | `gexpandgroup.R` | — | Medium | todo | expander API differs |
-| `glayout` | `glayout.R` | 162 | Medium | todo | `GtkGrid` |
-| `gformlayout` | `gformlayout.R` | 152 | Medium | todo | built on group/layout |
-| `gnotebook` | `gnotebook.R` | 165 | Medium | todo | `GtkNotebook` still exists |
-| `gpanedgroup` | `gpanedgroup.R` | — | Medium | todo | `GtkPaned` |
-| `gstackwidget` | `gstackwidget.R` | — | Medium | todo | `GtkStack` preferred |
+| `gwindow` | `gwindow.R` | 211 | Medium | done | `close-request`, `SetChild`, `Present` |
+| `ggroup` / `gvbox` | `ggroup.R` | 167 | Medium | done | `gtkBoxNew` / Append; scroll via `GtkScrolledWindow` |
+| `gframe` | `gframe.R` | — | Low | done | `gtkFrameSetChild` |
+| `gexpandgroup` | `gexpandgroup.R` | — | Medium | done | `gtkExpander` |
+| `glayout` | `glayout.R` | 162 | Medium | done | `GtkGrid` |
+| `gformlayout` | `gformlayout.R` | 152 | Medium | done | built on grid |
+| `gnotebook` | `gnotebook.R` | 165 | Medium | done | `GtkNotebook` |
+| `gpanedgroup` | `gpanedgroup.R` | — | Medium | done | `GtkPaned` |
+| `gstackwidget` | `gstackwidget.R` | — | Medium | done | `GtkStack` |
 
 ## Phase 1 — controls
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
-| `gbutton` | `gbutton.R` | — | Low | todo | drop EventBox wrapper |
-| `glabel` | `glabel.R` | — | Low–Med | todo | clickable label → gesture |
-| `gedit` | `gedit.R` | 216 | Medium | todo | `GtkEditable` text APIs |
-| `gtext` | `gtext.R` | 213 | Medium | todo | `GtkTextView` |
-| `gcheckbox` | `gcheckbox.R` | — | Low | todo | |
-| `gcheckboxgroup` | `gcheckboxgroup.R` | 256 | Medium | todo | box of checks |
-| `gradio` | `gradio.R` | — | Medium | todo | group semantics |
-| `gcombobox` | `gcombobox.R` | 249 | High | todo | consider `GtkDropDown` |
-| `gslider` | `gslider.R` | — | Low | todo | `GtkScale` |
-| `gspinbutton` | `gspinbutton.R` | — | Low | todo | |
-| `gprogressbar` | `gprogressbar.R` | — | Low | todo | |
-| `gseparator` | `gseparator.R` | — | Low | todo | |
-| `gimage` | `gimage.R` | — | Medium | todo | paintable / file load |
+| `gbutton` | `gbutton.R` | — | Low | done | no EventBox |
+| `glabel` | `glabel.R` | — | Low–Med | done | box wrapper; editable entry |
+| `gedit` | `gedit.R` | 216 | Medium | done | `GtkEditable` + placeholder |
+| `gtext` | `gtext.R` | 213 | Medium | done | `GtkTextView` |
+| `gcheckbox` | `gcheckbox.R` | — | Low | done | |
+| `gcheckboxgroup` | `gcheckboxgroup.R` | 256 | Medium | done | box of checks |
+| `gradio` | `gradio.R` | — | Medium | done | `gtkCheckButtonSetGroup` |
+| `gcombobox` | `gcombobox.R` | 249 | High | done | `GtkComboBoxText` |
+| `gslider` | `gslider.R` | — | Low | done | `GtkScale` |
+| `gspinbutton` | `gspinbutton.R` | — | Low | done | |
+| `gprogressbar` | `gprogressbar.R` | — | Low | done | |
+| `gseparator` | `gseparator.R` | — | Low | done | |
+| `gimage` | `gimage.R` | — | Medium | done | file / icon name |
 
 ## Phase 1 — dialogs / misc
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
-| dialogs | `dialogs.R` | 406 | Medium | todo | Rgtk4 message/dialog helpers |
-| `gfile` / `gfilebrowse` | `gfile.R` | 190 | Medium | todo | `gtkFileChooserDialogRun` |
-| `gtimer` | `gtimer.R` | — | Low | todo | `gTimeoutAdd` |
-| `gaction` | `gaction.R` | — | Medium | todo | Gio actions or proxy |
+| dialogs | `dialogs.R` | 406 | Medium | done | message/dialog helpers |
+| `gfile` / `gfilebrowse` | `gfile.R` | 190 | Medium | done | `gtkFileChooserDialogRun` |
+| `gtimer` | `gtimer.R` | — | Low | done | `gTimeoutAdd` |
+| `gaction` | `gaction.R` | — | Medium | done | lightweight proxy |
 
 ## Phase 2 — iNZight / hard
 
@@ -77,11 +77,11 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 
 | Concern | Status | Notes |
 |---------|--------|-------|
-| EventBox wrappers | todo | Remove by default |
-| Stock icons | todo | Compatibility map |
+| EventBox wrappers | done | Removed by default |
+| Stock icons | done | Compatibility map in `gtk-misc.R` / `icons.R` |
 | DnD | deferred | After core; GTK4 APIs |
 | Font setters | deferred | CSS / Pango differences |
-| expand/fill/anchor | todo | Map in packing helpers |
+| expand/fill/anchor | done | Mapped in packing helpers |
 
 ## Not in this package
 

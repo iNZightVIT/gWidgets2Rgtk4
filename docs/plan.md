@@ -28,7 +28,7 @@
 - Toolkit class + `.onLoad` hooks (`gtkInit` / `gtkStartEventLoop`)
 - gWidgets2 discovery: `poss_packages` + Rgtk4 init-check in `guiToolkit()`
 
-### Phase 1 — Core path
+### Phase 1 — Core path ✅
 
 Infrastructure: `GComponent` / `GContainer` / `GWidget`, packing helpers, icons, signals.
 

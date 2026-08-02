@@ -1,0 +1,14 @@
+---
+description: Chunk workflow — tests with code, green suite before commit prompts
+alwaysApply: true
+---
+
+# Development workflow
+
+1. **Tests with the code** — For each small chunk (helper file, widget family), add or extend `tests/testthat/` in the same chunk. Prefer non-interactive unit tests. GUI/smoke tests use `skip_on_cran()`, `skip_if_not(interactive())`, or skip when GTK/display is unavailable.
+
+2. **Green suite before commit prompt** — After a chunk, run the full package suite (`devtools::test()` or equivalent). Fix failures before asking about commits.
+
+3. **Ask to commit** — Only after tests pass, ask whether to commit that chunk. Never commit unless the user explicitly asks.
+
+4. **Chunk size** — Prefer reviewable increments (infra helpers, then one or few widgets), not a single mega-diff for all of Phase 1.
