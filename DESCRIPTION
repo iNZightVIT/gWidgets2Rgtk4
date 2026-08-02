@@ -21,7 +21,11 @@ Imports:
     Rgtk4,
     gWidgets2 (>= 1.0.7)
 Suggests:
+    covr,
     testthat (>= 3.0.0)
+Remotes:
+    JanMarvin/Rgtk4,
+    tmelliott/gWidgets2
 Encoding: UTF-8
 LazyLoad: yes
 Collate:

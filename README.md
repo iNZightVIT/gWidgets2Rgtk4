@@ -1,5 +1,7 @@
 # gWidgets2Rgtk4
 
+[![Codecov test coverage](https://codecov.io/gh/iNZightVIT/gWidgets2Rgtk4/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iNZightVIT/gWidgets2Rgtk4?branch=main)
+
 Toolkit backend for [gWidgets2](https://github.com/gWidgets3/gWidgets2) using [Rgtk4](https://github.com/JanMarvin/Rgtk4) (GTK4).
 
 This package replaces [gWidgets2RGtk2](../gWidgets2RGtk2) for new work. The **gWidgets2** public API stays the same; the GTK implementation underneath is new.
