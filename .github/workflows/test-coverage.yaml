@@ -15,6 +15,8 @@ permissions: read-all
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
+    # Secrets live in the GitHub Environment named "codecov".
+    environment: codecov
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
