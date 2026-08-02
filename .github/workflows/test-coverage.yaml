@@ -41,7 +41,11 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr
+          # Prefer GitHub remotes over CRAN for toolkit discovery + Rgtk4.
+          extra-packages: |
+            any::covr
+            github::tmelliott/gWidgets2
+            github::JanMarvin/Rgtk4
           needs: coverage
 
       - name: Test coverage
