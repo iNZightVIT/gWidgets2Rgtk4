@@ -46,7 +46,7 @@ Prefer Rgtk4 helpers where present:
 
 ## Graphics
 
-`cairoDevice` + GTK2 drawing integration does **not** transfer. `ggraphics` needs a GTK4 `GtkDrawingArea` / Cairo (or other) strategy — see plan Phase 2 / graphics spike. Rgtk4 examples and tests are the reference, not gWidgets2RGtk2’s `ggraphics.R`.
+`cairoDevice` + GTK2 drawing does **not** transfer. Current spike: `unigd::ugd()` + PNG blit into `GtkPicture` (see `R/ggraphics.R`). No Cairo R bindings required. Follow-up: httpgd / WebView for web-native plots once iNZight runs on GTK4.
 
 ## Events and DnD
 

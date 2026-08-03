@@ -61,7 +61,7 @@ test_that("handler block/unblock/remove and stubs warn", {
   expect_warning(b$add_drop_target(function(h) NULL), "Drag-and-drop")
   expect_warning(b$add_drag_motion(function(h) NULL), "Drag motion")
   expect_warning(b$add_handler_keystroke(function(h) NULL), "not fully implemented")
-  expect_warning(b$add_popup_menu(list()), "Phase 2")
+  expect_silent(b$add_popup_menu(list()))
 
   b$remove_handlers()
   dispose(w)

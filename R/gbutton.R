@@ -17,6 +17,10 @@ GButton <- setRefClass(
   contains = "GWidget",
   methods = list(
     initialize = function(toolkit = NULL, text = NULL, handler, action, container, ...) {
+      if (is(text, "GAction")) {
+        action <- text
+        text <- action$get_value()
+      }
       if (!is_empty(text))
         widget <<- gtkButtonNewWithLabel(as.character(text)[1])
       else
@@ -28,10 +32,22 @@ GButton <- setRefClass(
         set_icon(text)
       add_to_parent(container, .self, ...)
       if (is(action, "GAction")) {
+        lab <- action$get_value()
+        if (!is_empty(lab)) {
+          gtkButtonSetLabel(widget, as.character(lab)[1])
+          ic <- action$get_icon()
+          set_icon(if (!is.null(ic) && !is_empty(ic)) ic else lab)
+        }
         tip <- tryCatch(action$get_tooltip(), error = function(e) NULL)
-        if (!is.null(tip) && nzchar(tip))
+        if (!is.null(tip) && nzchar(as.character(tip)[1]))
           set_tooltip(tip)
-        handler_id <<- add_handler_changed(handler, action)
+        gtkWidgetSetSensitive(widget, action$get_enabled())
+        action$add_proxy(widget)
+        gSignalConnectR(widget, "clicked", function(...) {
+          action$activate()
+        })
+        if (is_handler(handler))
+          handler_id <<- add_handler_changed(handler, NULL)
       } else {
         handler_id <<- add_handler_changed(handler, action)
       }

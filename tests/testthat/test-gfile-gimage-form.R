@@ -14,16 +14,37 @@ test_that("gfilebrowse get/set value", {
 })
 
 test_that("gfile open/save/selectdir via mocked chooser", {
+  seen_parent <- NULL
   local_mocked_bindings(
     gtkFileChooserDialogRun = function(parent = NULL, title = "Choose File", action = 0L) {
+      seen_parent <<- parent
       list(response = -5L, file = sprintf("/tmp/chosen-%s", action))
     }
   )
   tk <- guiToolkit("Rgtk4")
   expect_equal(.gfile.guiWidgetsToolkitRgtk4(tk, type = "open"), "/tmp/chosen-0")
+  expect_true(inherits(seen_parent, "GtkWindow"))
   expect_equal(.gfile.guiWidgetsToolkitRgtk4(tk, type = "save", text = "Save as"),
                "/tmp/chosen-1")
   expect_equal(.gfile.guiWidgetsToolkitRgtk4(tk, type = "selectdir"), "/tmp/chosen-2")
+})
+
+test_that("gfile passes explicit parent window", {
+  w <- gwindow("file-parent", visible = FALSE)
+  seen_parent <- NULL
+  local_mocked_bindings(
+    gtkFileChooserDialogRun = function(parent = NULL, title = "Choose File", action = 0L) {
+      seen_parent <<- parent
+      list(response = -6L, file = NULL)
+    }
+  )
+  tk <- guiToolkit("Rgtk4")
+  expect_equal(
+    .gfile.guiWidgetsToolkitRgtk4(tk, type = "open", parent = w),
+    character(0)
+  )
+  expect_identical(seen_parent, getWidget(w))
+  dispose(w)
 })
 
 test_that("gfile cancel returns character(0)", {

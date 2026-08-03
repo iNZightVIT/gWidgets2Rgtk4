@@ -57,16 +57,16 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | dialogs | `dialogs.R` | 406 | Medium | done | message/dialog helpers |
 | `gfile` / `gfilebrowse` | `gfile.R` | 190 | Medium | done | `gtkFileChooserDialogRun` |
 | `gtimer` | `gtimer.R` | — | Low | done | `gTimeoutAdd` |
-| `gaction` | `gaction.R` | — | Medium | done | lightweight proxy |
+| `gaction` | `gaction.R` | — | Medium | done | proxy + UI/Gio sync (Phase 2) |
 
 ## Phase 2 — iNZight / hard
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
-| `gmenu` | `gmenu.R` | 156 | Very High | todo | GMenuModel / popover |
-| `gtoolbar` | `gtoolbar.R` | — | Very High | todo | box of buttons or action bar |
-| `gstatusbar` | `gstatusbar.R` | — | High | todo | |
-| `ggraphics` | `ggraphics.R` | 315 | Very High | todo | drawing-area spike; no cairoDevice |
+| `gmenu` | `gmenu.R` | 156 | Very High | done | GMenuModel + PopoverMenuBar / PopoverMenu |
+| `gtoolbar` | `gtoolbar.R` | — | Very High | done | GtkBox of buttons |
+| `gstatusbar` | `gstatusbar.R` | — | High | done | GtkStatusbar push/pop |
+| `ggraphics` | `ggraphics.R` | — | High | spike | unigd device + GtkPicture PNG blit; httpgd/WebView later |
 | `gtable` | `gtable.R` | 517 | High | todo | TreeView / ColumnView |
 | `gdf` | `gdf.R` | 1562 | Very High | todo | evaluate `gtkDataFrameView` |
 | `gtree` | `gtree.R` | 537 | High | todo | |
@@ -82,6 +82,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | DnD | deferred | After core; GTK4 APIs |
 | Font setters | deferred | CSS / Pango differences |
 | expand/fill/anchor | done | Mapped in packing helpers |
+| Popup menus | done | PopoverMenu + GestureClick on GComponent |
 
 ## Not in this package
 

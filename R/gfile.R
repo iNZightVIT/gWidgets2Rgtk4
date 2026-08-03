@@ -7,13 +7,16 @@ NULL
 .gfile.guiWidgetsToolkitRgtk4 <- function(toolkit, text = "",
                                           type = c("open", "save", "selectdir"),
                                           initial.filename = NULL, initial.dir = getwd(),
-                                          filter = list(), multi = FALSE, ...) {
+                                          filter = list(), multi = FALSE, ...,
+                                          parent = NULL) {
   type <- match.arg(type)
   ## action: 0 open, 1 save, 2 select folder
   action <- switch(type, open = 0L, save = 1L, selectdir = 2L)
   title <- if (nzchar(text)) text else switch(type, open = "Open", save = "Save",
                                               selectdir = "Select folder")
-  res <- gtkFileChooserDialogRun(parent = NULL, title = title, action = action)
+  ## Always give GTK a transient parent (avoids "mapped without a transient parent")
+  parent_win <- .dialog_ensure_parent(parent)
+  res <- gtkFileChooserDialogRun(parent = parent_win, title = title, action = action)
   ## ACCEPT / OK
   if (is.null(res) || is.null(res$file) || !(res$response %in% c(-3L, -5L)))
     return(character(0))
@@ -64,10 +67,11 @@ GFileBrowse <- setRefClass(
         change_signal = "activate"
       )
       gSignalConnectR(button, "clicked", function(...) {
+        parent_win <- tryCatch(getTopLevel(.self), error = function(e) NULL)
         path <- .gfile.guiWidgetsToolkitRgtk4(
           toolkit, text = "", type = file_type,
           initial.filename = get_value(), initial.dir = initial_dir,
-          filter = file_filter
+          filter = file_filter, parent = parent_win
         )
         if (length(path) && nzchar(path[1])) {
           set_value(path[1])

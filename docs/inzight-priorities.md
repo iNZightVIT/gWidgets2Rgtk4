@@ -37,7 +37,7 @@ Keeping familiar refclass names in gWidgets2Rgtk4 reduces pain but is **not** a 
 Heavy gWidgets usage appears across GUI, plot modification windows, change-data windows, menu bar, import, survey design, data view, info windows, etc. Practically, after Phase 1 containers/controls/dialogs, prioritize:
 
 1. **Chrome:** `gmenu`, `gtoolbar`, `gstatusbar`, `gaction`
-2. **Plots:** `ggraphics` (hard dependency on a device story)
+2. **Plots:** `ggraphics` (unigd + GtkPicture spike; later httpgd/WebView)
 3. **Data:** `gtable` / `gdf` (data view widget)
 4. **Browse/tree:** `gtree`, `gvarbrowser` as used
 5. **Files/dialogs:** largely Phase 1, but verify against import/export flows
@@ -47,7 +47,7 @@ Heavy gWidgets usage appears across GUI, plot modification windows, change-data 
 1. Package smoke demo (window + controls + handler).
 2. Minimal “iNZight-shaped” script: main window, paned/notebook, button row, combobox, table stub — no full app.
 3. Switch a development iNZight branch to `guiToolkit="Rgtk4"` and `gWidgets2Rgtk4`; fix leaks as they appear.
-4. Graphics last-mile: replace cairoDevice path with whatever `ggraphics` provides.
+4. Graphics last-mile: `ggraphics` uses unigd today; consider httpgd + embedded WebView for richer / web results later.
 
 ## Tracking
 

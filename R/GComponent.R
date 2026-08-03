@@ -230,10 +230,40 @@ GComponentObservable <- setRefClass(
       warning("addHandlerBlur not fully implemented for GTK4", call. = FALSE)
     },
     add_popup_menu = function(menulist, action = NULL, ...) {
-      warning("Popup menus deferred to Phase 2", call. = FALSE)
+      mb <- .prepare_popup_menu(menulist)
+      .attach_popup_gesture(handler_widget(), mb, button = 1L)
     },
     add_3rd_mouse_popup_menu = function(menulist, action = NULL, ...) {
-      warning("Popup menus deferred to Phase 2", call. = FALSE)
+      mb <- .prepare_popup_menu(menulist)
+      .attach_popup_gesture(handler_widget(), mb, button = 3L)
     }
   )
 )
+
+.prepare_popup_menu <- function(menulist) {
+  if (is.list(menulist) && !is(menulist, "GComponent"))
+    mb <- gmenu(menulist, popup = TRUE)
+  else
+    mb <- menulist
+  if (!is(mb, "GMenuPopup"))
+    stop("Pass in popupmenu or list defining one", call. = FALSE)
+  mb
+}
+
+.attach_popup_gesture <- function(target, mb, button = 3L) {
+  force(mb)
+  force(button)
+  force(target)
+  g <- gtkGestureClickNew()
+  gtkGestureSingleSetButton(g, 0L)
+  try(gtkEventControllerSetPropagationPhase(g, 1L), silent = TRUE)
+  gSignalConnectR(g, "pressed", function(gest, n_press, x, y) {
+    event <- tryCatch(gtkEventControllerGetCurrentEvent(gest), error = function(e) NULL)
+    event_btn <- tryCatch(as.integer(gdkButtonEventGetButton(event)), error = function(e) 0L)
+    if (!identical(event_btn, as.integer(button)))
+      return()
+    mb$popup_at(target, as.integer(x), as.integer(y))
+  })
+  gtkWidgetAddController(target, g)
+  invisible(g)
+}

@@ -22,7 +22,8 @@ Imports:
     gWidgets2 (>= 1.0.7)
 Suggests:
     covr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    unigd
 Remotes:
     JanMarvin/Rgtk4,
     tmelliott/gWidgets2
@@ -48,9 +49,11 @@ Collate:
     'gexpandgroup.R'
     'gfile.R'
     'gformlayout.R'
+    'ggraphics.R'
     'gimage.R'
     'glabel.R'
     'glayout.R'
+    'gmenu.R'
     'gnotebook.R'
     'gpanedgroup.R'
     'gprogressbar.R'
@@ -59,8 +62,10 @@ Collate:
     'gslider.R'
     'gspinbutton.R'
     'gstackwidget.R'
+    'gstatusbar.R'
     'gtext.R'
     'gtimer.R'
+    'gtoolbar.R'
     'gwindow.R'
     'icons.R'
     'startup.R'

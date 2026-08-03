@@ -1,1 +1,6 @@
-gWidgets2Rgtk4	Load the Rgtk4 toolkit and run gWidgets2 examples
+gWidgets2Rgtk4	Basic smoke dialog (edit, checkbox, handlers)
+chrome	Menubar, toolbar, statusbar, and shared gaction
+controls	Radio, checkbox group, combo, slider, spin, progress
+containers	Notebook, paned, expand group, form layout
+dialogs	gmessage, gconfirm, ginput, galert, gfile
+graphics	Embeddable plots via unigd + GtkPicture
