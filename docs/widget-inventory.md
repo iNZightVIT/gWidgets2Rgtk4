@@ -67,8 +67,8 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | `gtoolbar` | `gtoolbar.R` | — | Very High | done | GtkBox of buttons |
 | `gstatusbar` | `gstatusbar.R` | — | High | done | GtkStatusbar push/pop |
 | `ggraphics` | `ggraphics.R` | — | High | spike | unigd device + GtkPicture PNG blit; httpgd/WebView later |
-| `gtable` | `gtable.R` | — | High | done | ColumnView + R data.frame; selection / filter / set_items |
-| `gdf` | `gdf.R` | — | Very High | mvp | EditableLabel cells; set_frame/get_frame; DnD stub |
+| `gtable` | `gtable.R` | — | High | done | ColumnView; header-menu follow-up (see plan) |
+| `gdf` | `gdf.R` | — | Very High | mvp | EditableLabel; set_frame/get_frame; header-menu later |
 | `gtree` | `gtree.R` | 537 | High | todo | |
 | `gvarbrowser` | `gvarbrowser.R` | 467 | High | todo | builds on tree/table |
 | `gcalendar` | `gcalendar.R` | — | Medium | deferred | |

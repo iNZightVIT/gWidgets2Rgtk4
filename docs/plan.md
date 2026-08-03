@@ -52,7 +52,9 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 
 **Graphics notes:** First cut uses [unigd](https://github.com/nx10/unigd) as a portable R device and blits PNG into `GtkPicture` (poll on plot/size change). No rubber-band / locator. Follow-up once iNZight boots: httpgd (or other web renderers) in a WebView pane.
 
-**Table notes:** `gtable` / `gdf` use `GtkColumnView` with an R `data.frame` as source of truth. `gdf` edits via `GtkEditableLabel`; exposes `set_frame` / `get_frame` / `set_editable` / `add_dnd_columns` (DnD stub). Header coerce menus and undo stack deferred.
+**Table notes:** `gtable` / `gdf` use `GtkColumnView` with an R `data.frame` as source of truth. `gdf` edits via `GtkEditableLabel`; exposes `set_frame` / `get_frame` / `set_editable` / `add_dnd_columns` (DnD stub). Undo stack deferred.
+
+**Follow-up — column header menus:** GTK4 supports this natively via `gtkColumnViewColumnSetHeaderMenu()` + `GMenuModel` (right-click). Reuse `build_gmenu_model()` / `gaction`; insert the action group on the ColumnView. Easy for `gtable` (sort / rename); `gdf` needs column mutate helpers first (coerce / insert / delete). `remove_popup_menu()` should clear header-menu. Radio items in menus still limited in our gmenu builder.
 
 See [inzight-priorities.md](inzight-priorities.md) and [widget-inventory.md](widget-inventory.md).
 
