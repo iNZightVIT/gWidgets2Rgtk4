@@ -48,7 +48,9 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
 3. `gtable`, then `gdf` ✅
 4. `gtree`, `gvarbrowser` ✅
-5. Remainder: `gcalendar`, DnD, fonts, edge packing
+5. Remainder: `gcalendar` ✅, DnD, fonts, edge packing
+
+**Calendar notes:** Entry + “Date…” opens a modal `GtkCalendar` dialog (OK/Cancel). GTK4 removed `day-selected-double-click`; date I/O uses `GDateTime` (`gtkCalendarGetDate` / `gtkCalendarSelectDay`).
 
 **Tree notes:** `gtree` / `gvarbrowser` use `GtkColumnView` + `GtkTreeListModel` + `GtkTreeExpander` (not deprecated `GtkTreeView`). Offspring / workspace children load lazily via the tree-list create callback. `gvarbrowser` rebuilds on workspace changes (MVP); DnD drop-source deferred with the rest of DnD.
 

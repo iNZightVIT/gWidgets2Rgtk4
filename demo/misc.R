@@ -1,12 +1,69 @@
-## Widgets without a dedicated demo — start with gtree / gvarbrowser.
-## Also see: demo(gtable), demo(gdf), demo(chrome), …
+## Catch-all widget gallery + gtree / gvarbrowser.
+## Also see: demo(controls), demo(containers), demo(gtable), demo(gdf), demo(chrome), …
 require(gWidgets2)
 options(guiToolkit = "Rgtk4")
 
 w <- gwindow("gWidgets2Rgtk4 misc widgets", visible = FALSE,
-             width = 640, height = 480)
+             width = 680, height = 560)
 sb <- gstatusbar("Ready", container = w)
 nb <- gnotebook(container = w)
+
+## --- widget gallery ------------------------------------------------------
+gal_page <- gvbox(container = nb, label = "widgets", spacing = 8)
+glabel("Kitchen-sink page of common controls. Values echo to the status bar.",
+       container = gal_page)
+
+## Buttons / label
+fr_btn <- gframe("Buttons & label", container = gal_page)
+btn_row <- ggroup(container = fr_btn)
+gbutton("Click me", container = btn_row, handler = function(h, ...) {
+  svalue(sb) <- "gbutton clicked"
+})
+gbutton(action = gaction("Stock-ish", icon = "ok", handler = function(h, ...) {
+  svalue(sb) <- "gaction button"
+}), container = btn_row)
+gal_lbl <- glabel("A glabel — click Update to refresh", container = fr_btn)
+
+## Text inputs
+fr_txt <- gframe("Text input", container = gal_page)
+fl_txt <- gformlayout(container = fr_txt)
+gedit("edit me", label = "gedit", container = fl_txt,
+      handler = function(h, ...) svalue(sb) <- sprintf("gedit → %s", svalue(h$obj)))
+gcalendar(format(Sys.Date()), label = "gcalendar", container = fl_txt,
+          handler = function(h, ...) svalue(sb) <- sprintf("gcalendar → %s", svalue(h$obj)))
+gfilebrowse(text = "Pick a file…", label = "gfilebrowse", container = fl_txt,
+            handler = function(h, ...) svalue(sb) <- sprintf("gfilebrowse → %s", svalue(h$obj)))
+gtext("gtext — multi-line\nedit area", height = 80, container = fr_txt)
+
+## Selection
+fr_sel <- gframe("Selection", container = gal_page)
+gradio(c("alpha", "beta", "gamma"), selected = 1, horizontal = TRUE, container = fr_sel,
+       handler = function(h, ...) svalue(sb) <- sprintf("gradio → %s", svalue(h$obj)))
+gcheckbox("gcheckbox", checked = TRUE, container = fr_sel,
+          handler = function(h, ...) svalue(sb) <- sprintf("gcheckbox → %s", svalue(h$obj)))
+gcheckboxgroup(c("x", "y", "z"), checked = c(TRUE, FALSE, TRUE), horizontal = TRUE,
+               container = fr_sel,
+               handler = function(h, ...) {
+                 svalue(sb) <- sprintf("gcheckboxgroup → %s", paste(svalue(h$obj), collapse = ","))
+               })
+gcombobox(c("one", "two", "three"), selected = 1, container = fr_sel,
+          handler = function(h, ...) svalue(sb) <- sprintf("gcombobox → %s", svalue(h$obj)))
+
+## Numeric
+fr_num <- gframe("Numeric", container = gal_page)
+gal_sl <- gslider(from = 0, to = 100, by = 1, value = 40, container = fr_num,
+                  handler = function(h, ...) {
+                    svalue(gal_pb) <- svalue(h$obj)
+                    svalue(sb) <- sprintf("gslider → %s", svalue(h$obj))
+                  })
+gspinbutton(from = 0, to = 10, by = 1, value = 3, container = fr_num,
+            handler = function(h, ...) svalue(sb) <- sprintf("gspinbutton → %s", svalue(h$obj)))
+gal_pb <- gprogressbar(40, container = fr_num)
+gseparator(container = fr_num)
+gbutton("Update label from slider", container = fr_num, handler = function(h, ...) {
+  svalue(gal_lbl) <- sprintf("Slider is at %s", svalue(gal_sl))
+  svalue(sb) <- "label updated"
+})
 
 ## --- gtree ---------------------------------------------------------------
 tree_page <- gvbox(container = nb, label = "gtree", spacing = 6)
@@ -150,4 +207,4 @@ addHandlerDestroy(w, handler = function(h, ...) {
 
 svalue(nb) <- 1L
 visible(w) <- TRUE
-message("Misc demo open: gtree, gvarbrowser. Close the window to stop the WS timer.")
+message("Misc demo open: widgets (incl. gcalendar), gtree, gvarbrowser.")

@@ -71,7 +71,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | `gdf` | `gdf.R` | — | Very High | mvp | EditableLabel; set_frame/get_frame; header-menu later |
 | `gtree` | `gtree.R` | — | High | done | ColumnView + TreeListModel + TreeExpander |
 | `gvarbrowser` | `gvarbrowser.R` | — | High | mvp | WSWatcherModel; full rebuild on update; DnD deferred |
-| `gcalendar` | `gcalendar.R` | — | Medium | deferred | |
+| `gcalendar` | `gcalendar.R` | — | Medium | done | Entry + modal GtkCalendar; GDateTime |
 
 ## Cross-cutting (many files)
 
