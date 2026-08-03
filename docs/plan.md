@@ -46,11 +46,13 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 
 1. `gmenu`, `gtoolbar`, `gstatusbar`, `gaction` (chrome; GTK4 redesign) ✅
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
-3. `gtable`, then `gdf`
+3. `gtable`, then `gdf` ✅
 4. `gtree`, `gvarbrowser`
 5. Remainder: `gcalendar`, DnD, fonts, edge packing
 
 **Graphics notes:** First cut uses [unigd](https://github.com/nx10/unigd) as a portable R device and blits PNG into `GtkPicture` (poll on plot/size change). No rubber-band / locator. Follow-up once iNZight boots: httpgd (or other web renderers) in a WebView pane.
+
+**Table notes:** `gtable` / `gdf` use `GtkColumnView` with an R `data.frame` as source of truth. `gdf` edits via `GtkEditableLabel`; exposes `set_frame` / `get_frame` / `set_editable` / `add_dnd_columns` (DnD stub). Header coerce menus and undo stack deferred.
 
 See [inzight-priorities.md](inzight-priorities.md) and [widget-inventory.md](widget-inventory.md).
 

@@ -43,6 +43,8 @@ Collate:
     'gcheckbox.R'
     'gcheckboxgroup.R'
     'gcombobox.R'
+    'gtable.R'
+    'gdf.R'
     'gedit.R'
     'ggroup.R'
     'gframe.R'

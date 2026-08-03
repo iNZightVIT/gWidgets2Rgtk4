@@ -4,3 +4,5 @@ controls	Radio, checkbox group, combo, slider, spin, progress
 containers	Notebook, paned, expand group, form layout
 dialogs	gmessage, gconfirm, ginput, galert, gfile
 graphics	Embeddable plots via unigd + GtkPicture
+gtable	Selection table (ColumnView)
+gdf	Editable data frame (ColumnView)
