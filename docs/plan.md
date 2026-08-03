@@ -47,8 +47,10 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 1. `gmenu`, `gtoolbar`, `gstatusbar`, `gaction` (chrome; GTK4 redesign) ✅
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
 3. `gtable`, then `gdf` ✅
-4. `gtree`, `gvarbrowser`
+4. `gtree`, `gvarbrowser` ✅
 5. Remainder: `gcalendar`, DnD, fonts, edge packing
+
+**Tree notes:** `gtree` / `gvarbrowser` use `GtkColumnView` + `GtkTreeListModel` + `GtkTreeExpander` (not deprecated `GtkTreeView`). Offspring / workspace children load lazily via the tree-list create callback. `gvarbrowser` rebuilds on workspace changes (MVP); DnD drop-source deferred with the rest of DnD.
 
 **Graphics notes:** First cut uses [unigd](https://github.com/nx10/unigd) as a portable R device and blits PNG into `GtkPicture` (poll on plot/size change). No rubber-band / locator. Follow-up once iNZight boots: httpgd (or other web renderers) in a WebView pane.
 

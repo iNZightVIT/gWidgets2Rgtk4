@@ -1,5 +1,5 @@
 ## Smoke demo for the Rgtk4 toolkit backend of gWidgets2.
-## Also see: demo(chrome), demo(controls), demo(containers), demo(dialogs)
+## Also see: demo(chrome), demo(controls), demo(containers), demo(dialogs), demo(misc)
 require(gWidgets2)
 options(guiToolkit = "Rgtk4")
 
@@ -22,4 +22,4 @@ gbutton("Close", container = g, handler = function(h, ...) {
   dispose(w)
 })
 
-message("Smoke window open. Other demos: chrome, controls, containers, dialogs.")
+message("Smoke window open. Other demos: chrome, controls, containers, dialogs, misc.")

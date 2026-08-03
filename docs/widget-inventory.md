@@ -69,8 +69,8 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | `ggraphics` | `ggraphics.R` | — | High | spike | unigd device + GtkPicture PNG blit; httpgd/WebView later |
 | `gtable` | `gtable.R` | — | High | done | ColumnView; header-menu follow-up (see plan) |
 | `gdf` | `gdf.R` | — | Very High | mvp | EditableLabel; set_frame/get_frame; header-menu later |
-| `gtree` | `gtree.R` | 537 | High | todo | |
-| `gvarbrowser` | `gvarbrowser.R` | 467 | High | todo | builds on tree/table |
+| `gtree` | `gtree.R` | — | High | done | ColumnView + TreeListModel + TreeExpander |
+| `gvarbrowser` | `gvarbrowser.R` | — | High | mvp | WSWatcherModel; full rebuild on update; DnD deferred |
 | `gcalendar` | `gcalendar.R` | — | Medium | deferred | |
 
 ## Cross-cutting (many files)

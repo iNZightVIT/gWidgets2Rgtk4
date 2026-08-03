@@ -6,3 +6,4 @@ dialogs	gmessage, gconfirm, ginput, galert, gfile
 graphics	Embeddable plots via unigd + GtkPicture
 gtable	Selection table (ColumnView)
 gdf	Editable data frame (ColumnView)
+misc	gtree, gvarbrowser (and other widgets without a dedicated demo)

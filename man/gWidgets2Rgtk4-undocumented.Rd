@@ -5,7 +5,8 @@
 %   R/gfile.R, R/gformlayout.R, R/ggraphics.R, R/gimage.R, R/glabel.R,
 %   R/glayout.R, R/gmenu.R, R/gnotebook.R, R/gpanedgroup.R, R/gprogressbar.R,
 %   R/gradio.R, R/gseparator.R, R/gslider.R, R/gspinbutton.R, R/gstackwidget.R,
-%   R/gstatusbar.R, R/gtext.R, R/gtimer.R, R/gtoolbar.R, R/gwindow.R, R/icons.R
+%   R/gstatusbar.R, R/gtext.R, R/gtimer.R, R/gtoolbar.R, R/gtree.R,
+%   R/gvarbrowser.R, R/gwindow.R, R/icons.R
 \name{getWidget.RGtkObject}
 \alias{getWidget.RGtkObject}
 \alias{getBlock.RGtkObject}
@@ -48,6 +49,8 @@
 \alias{.gtext.guiWidgetsToolkitRgtk4}
 \alias{.gtimer.guiWidgetsToolkitRgtk4}
 \alias{.gtoolbar.guiWidgetsToolkitRgtk4}
+\alias{.gtree.guiWidgetsToolkitRgtk4}
+\alias{.gvarbrowser.guiWidgetsToolkitRgtk4}
 \alias{.gwindow.guiWidgetsToolkitRgtk4}
 \alias{.addStockIcons.guiWidgetsToolkitRgtk4}
 \alias{.getStockIcons.guiWidgetsToolkitRgtk4}
@@ -356,6 +359,29 @@
   ...
 )
 
+\method{.gtree}{guiWidgetsToolkitRgtk4}(
+  toolkit,
+  offspring = NULL,
+  offspring.data = NULL,
+  chosen.col = 1,
+  offspring.col = 2,
+  icon.col = NULL,
+  tooltip.col = NULL,
+  multiple = FALSE,
+  handler = NULL,
+  action = NULL,
+  container = NULL,
+  ...
+)
+
+\method{.gvarbrowser}{guiWidgetsToolkitRgtk4}(
+  toolkit,
+  handler = NULL,
+  action = "summary",
+  container = NULL,
+  ...
+)
+
 \method{.gwindow}{guiWidgetsToolkitRgtk4}(
   toolkit,
   title,
@@ -500,6 +526,12 @@
 
 \item{style}{undocumented argument, cf. gWidgets2 documentation.}
 
+\item{offspring}{undocumented argument, cf. gWidgets2 documentation.}
+
+\item{offspring.data}{undocumented argument, cf. gWidgets2 documentation.}
+
+\item{offspring.col}{undocumented argument, cf. gWidgets2 documentation.}
+
 \item{visible}{undocumented argument, cf. gWidgets2 documentation.}
 
 \item{name}{name of icon}
@@ -509,12 +541,6 @@
 \item{iconFiles}{undocumented argument, cf. gWidgets2 documentation.}
 
 \item{format}{undocumented argument, cf. gWidgets2 documentation.}
-
-\item{offspring}{undocumented argument, cf. gWidgets2 documentation.}
-
-\item{offspring.data}{undocumented argument, cf. gWidgets2 documentation.}
-
-\item{offspring.col}{undocumented argument, cf. gWidgets2 documentation.}
 }
 \description{
 The gWidgets2 separation of API from toolkit requires exporting

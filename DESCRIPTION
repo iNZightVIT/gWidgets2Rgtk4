@@ -68,6 +68,8 @@ Collate:
     'gtext.R'
     'gtimer.R'
     'gtoolbar.R'
+    'gtree.R'
+    'gvarbrowser.R'
     'gwindow.R'
     'icons.R'
     'startup.R'
