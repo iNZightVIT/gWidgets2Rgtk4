@@ -197,11 +197,34 @@ GTable <- setRefClass(
         selection <<- gtkMultiSelectionNew(string_list)
       else {
         selection <<- gtkSingleSelectionNew(string_list)
-        try(gtkSingleSelectionSetCanUnselect(selection, TRUE), silent = TRUE)
-        try(gtkSingleSelectionSetAutoselect(selection, FALSE), silent = TRUE)
+        ## Required for clearing selection (UnselectAll / INVALID position).
+        ## Defaults are can_unselect=FALSE, autoselect=TRUE.
+        configure_single_selection(selection)
       }
       gtkColumnViewSetModel(widget, selection)
       connect_selection_signal()
+    },
+
+    configure_single_selection = function(sel) {
+      gtkSingleSelectionSetCanUnselect(sel, TRUE)
+      gtkSingleSelectionSetAutoselect(sel, FALSE)
+      invisible(sel)
+    },
+
+    clear_selection = function() {
+      "Clear all selected rows (single or multi)"
+      if (is.null(selection))
+        return(invisible(NULL))
+      if (isTRUE(multiple)) {
+        gtkSelectionModelUnselectAll(selection)
+      } else {
+        ## Ensure can_unselect; without it UnselectAll/SetSelected(INVALID) are no-ops.
+        configure_single_selection(selection)
+        ## -1L casts to guint G_MAXUINT == GTK_INVALID_LIST_POSITION
+        gtkSingleSelectionSetSelected(selection, -1L)
+        gtkSelectionModelUnselectAll(selection)
+      }
+      invisible(NULL)
     },
 
     connect_selection_signal = function() {
@@ -239,7 +262,7 @@ GTable <- setRefClass(
       positions <- positions[!is.na(positions) & positions >= 0L]
       block_handlers()
       on.exit(unblock_handlers())
-      try(gtkSelectionModelUnselectAll(selection), silent = TRUE)
+      clear_selection()
       if (!length(positions))
         return(invisible(NULL))
       if (isTRUE(multiple)) {

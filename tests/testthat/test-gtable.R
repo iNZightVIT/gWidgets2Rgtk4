@@ -11,12 +11,16 @@ test_that("gtable displays items and supports svalue/index", {
   expect_equal(unname(dim(tbl)[1]), 3)
   expect_equal(names(tbl), c("name", "val"))
   expect_equal(tbl[, 1], c("a", "b", "c"))
+  ## Clearing selection requires can_unselect (GTK default is FALSE).
+  expect_true(as.logical(gtkSingleSelectionGetCanUnselect(tbl$selection)))
 
   svalue(tbl, index = TRUE) <- 2
   expect_equal(svalue(tbl, index = TRUE), 2L)
   expect_equal(svalue(tbl), "b")
 
   svalue(tbl, index = TRUE) <- 0L
+  expect_equal(svalue(tbl, index = TRUE), integer(0))
+  svalue(tbl, index = TRUE) <- integer(0)
   expect_equal(svalue(tbl, index = TRUE), integer(0))
 
   dispose(w)

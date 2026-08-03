@@ -250,8 +250,9 @@ GDf <- setRefClass(
       else
         string_list <<- gtkStringListFromVector(as.character(seq_len(n)))
       selection <<- gtkSingleSelectionNew(string_list)
-      try(gtkSingleSelectionSetCanUnselect(selection, TRUE), silent = TRUE)
-      try(gtkSingleSelectionSetAutoselect(selection, FALSE), silent = TRUE)
+      ## Defaults are can_unselect=FALSE, autoselect=TRUE; clearing needs can_unselect.
+      gtkSingleSelectionSetCanUnselect(selection, TRUE)
+      gtkSingleSelectionSetAutoselect(selection, FALSE)
       gtkColumnViewSetModel(widget, selection)
       host <- .self
       gSignalConnectR(selection, "selection-changed", function(...) {
@@ -319,7 +320,12 @@ GDf <- setRefClass(
     set_index = function(value, ...) {
       value <- as.integer(value)[1]
       if (is.na(value) || value < 1L) {
-        try(gtkSelectionModelUnselectAll(selection), silent = TRUE)
+        if (!is.null(selection)) {
+          gtkSingleSelectionSetCanUnselect(selection, TRUE)
+          ## -1L -> guint G_MAXUINT == GTK_INVALID_LIST_POSITION
+          gtkSingleSelectionSetSelected(selection, -1L)
+          gtkSelectionModelUnselectAll(selection)
+        }
         return(invisible(NULL))
       }
       view_pos <- data_to_view(value)
