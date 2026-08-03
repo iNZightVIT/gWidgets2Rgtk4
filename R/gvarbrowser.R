@@ -79,7 +79,6 @@ GVarBrowser <- setRefClass(
 
       make_columns()
       rebuild_model()
-      ## DnD stub — drop source deferred with rest of DnD
       add_to_parent(container, .self, ...)
       handler_id <<- add_handler_changed(handler, action)
 
@@ -87,6 +86,15 @@ GVarBrowser <- setRefClass(
                        start = TRUE)
       update_view()
       callSuper(toolkit)
+      ## After callSuper so .e exists for set_attr in add_drop_source
+      add_drop_source(handler = function(h, ...) {
+        l <- list(
+          name = svalue(h$obj),
+          obj = svalue(h$obj, drop = FALSE)
+        )
+        class(l) <- c("gvarbrowser_dropdata", class(l))
+        l
+      }, data.type = "object")
     },
 
     start_timer = function() if (isTRUE(use_timer)) timer$start_timer(),

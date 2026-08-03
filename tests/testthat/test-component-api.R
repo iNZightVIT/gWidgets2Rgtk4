@@ -57,9 +57,9 @@ test_that("handler block/unblock/remove and stubs warn", {
   b$notify_observers(signal = "clicked")
   expect_equal(n, 2)
 
-  expect_warning(b$add_drop_source(function(h) "x"), "Drag-and-drop")
-  expect_warning(b$add_drop_target(function(h) NULL), "Drag-and-drop")
-  expect_warning(b$add_drag_motion(function(h) NULL), "Drag motion")
+  expect_silent(b$add_drop_source(function(h) "x"))
+  expect_silent(b$add_drop_target(function(h) NULL))
+  expect_silent(b$add_drag_motion(function(h) NULL))
   expect_warning(b$add_handler_keystroke(function(h) NULL), "not fully implemented")
   expect_silent(b$add_popup_menu(list()))
 

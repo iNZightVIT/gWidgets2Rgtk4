@@ -1,4 +1,4 @@
-##' @include gtk-misc.R
+##' @include dnd.R
 NULL
 
 ##' Base class for widgets and containers
@@ -120,15 +120,115 @@ GComponent <- setRefClass(
       parent$add_child(child, expand, fill, anchor, ...)
     },
     handler_widget = function() widget,
-    ## DnD deferred to later phase
+    ## Drag-and-drop (GTK4 DragSource / DropTargetAsync)
     add_drop_source = function(handler, action = NULL, data.type = "text", ...) {
-      warning("Drag-and-drop source not implemented in gWidgets2Rgtk4 Phase 1", call. = FALSE)
+      data.type <- match.arg(data.type, c("text", "object"))
+      if (!is.function(handler))
+        return(invisible(NULL))
+      force(handler)
+      force(action)
+      force(data.type)
+      src <- gtkDragSourceNew()
+      gtkDragSourceSetActions(src, .dnd_action_copy)
+      ## Prefer capture so we win against Button/Notebook gestures
+      tryCatch(
+        gtkEventControllerSetPropagationPhase(src, 1L), ## CAPTURE
+        error = function(e) invisible(NULL)
+      )
+      state <- new.env(parent = emptyenv())
+      state$object_key <- NULL
+      state$provider <- NULL
+      gSignalConnectR(src, "prepare", function(source, x, y) {
+        h <- list(obj = .self, action = action)
+        val <- tryCatch(handler(h), error = function(e) {
+          warning("addDropSource handler error: ", conditionMessage(e), call. = FALSE)
+          NULL
+        })
+        payload <- NULL
+        wire <- ""
+        if (identical(data.type, "object")) {
+          state$object_key <- .dnd_store_object(val)
+          payload <- val
+          wire <- state$object_key
+        } else {
+          if (is.null(val) || (length(val) == 0 && !is.list(val)))
+            wire <- ""
+          else
+            wire <- paste(as.character(val), collapse = "\n")
+          payload <- wire
+        }
+        .dnd_set_active(payload)
+        provider <- .dnd_text_provider(wire)
+        ## Keep provider alive until drag-end (R GC vs GTK ownership)
+        state$provider <- provider
+        ## Must RETURN provider — side-effect set_content alone is not enough.
+        provider
+      })
+      gSignalConnectR(src, "drag-end", function(source, drag, delete_data) {
+        .dnd_clear_key(state$object_key)
+        state$object_key <- NULL
+        state$provider <- NULL
+        .dnd_clear_active()
+        NULL
+      })
+      gtkWidgetAddController(handler_widget(), src)
+      set_attr(".dnd_drag_source", src)
+      invisible(src)
     },
     add_drop_target = function(handler, action = NULL, ...) {
-      warning("Drag-and-drop target not implemented in gWidgets2Rgtk4 Phase 1", call. = FALSE)
+      if (!is.function(handler))
+        return(invisible(NULL))
+      force(handler)
+      force(action)
+      tgt <- get_attr(".dnd_drop_target")
+      if (is.null(tgt)) {
+        w <- handler_widget()
+        ## TextView ships a DropTarget; a second controller fights the same
+        ## GdkDrop. Own the site alone.
+        .dnd_remove_drop_controllers(w)
+        ## formats=NULL (any format). Do NOT pass a shared ContentFormats:
+        ## gtk_drop_target_async_new is transfer-full and unrefs it — sharing
+        ## across targets UAFs and wedges the UI.
+        tgt <- gtkDropTargetAsyncNew(NULL, as.integer(.dnd_action_copy))
+        gtkWidgetAddController(w, tgt)
+        set_attr(".dnd_drop_target", tgt)
+      }
+      gSignalConnectR(tgt, "drop", function(self, drop, x, y) {
+        ok <- FALSE
+        tryCatch({
+          h <- list(obj = .self, action = action)
+          h$dropdata <- .dnd_resolve_dropdata()
+          handler(h, x = x, y = y)
+          ok <- TRUE
+        }, error = function(e) {
+          warning("addDropTarget handler error: ", conditionMessage(e), call. = FALSE)
+        })
+        .dnd_finish_drop(drop, ok)
+        TRUE
+      })
+      invisible(tgt)
     },
     add_drag_motion = function(handler, action = NULL, ...) {
-      warning("Drag motion not implemented in gWidgets2Rgtk4 Phase 1", call. = FALSE)
+      if (!is.function(handler))
+        return(invisible(NULL))
+      force(handler)
+      force(action)
+      tgt <- get_attr(".dnd_drop_target")
+      if (is.null(tgt)) {
+        w <- handler_widget()
+        .dnd_remove_drop_controllers(w)
+        tgt <- gtkDropTargetAsyncNew(NULL, as.integer(.dnd_action_copy))
+        gtkWidgetAddController(w, tgt)
+        set_attr(".dnd_drop_target", tgt)
+      }
+      gSignalConnectR(tgt, "drag-motion", function(self, drop, x, y) {
+        h <- list(obj = .self, action = action)
+        tryCatch(handler(h, x = x, y = y), error = function(e) {
+          warning("addDragMotion handler error: ", conditionMessage(e), call. = FALSE)
+        })
+        .dnd_action_copy
+      })
+      invisible(tgt)
     }
   )
 )

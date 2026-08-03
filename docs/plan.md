@@ -48,11 +48,13 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
 3. `gtable`, then `gdf` ✅
 4. `gtree`, `gvarbrowser` ✅
-5. Remainder: `gcalendar` ✅, DnD, fonts, edge packing
+5. Remainder: `gcalendar` ✅, DnD ✅ (gdf column DnD deferred), fonts, edge packing
 
 **Calendar notes:** Entry + “Date…” opens a modal `GtkCalendar` dialog (OK/Cancel). GTK4 removed `day-selected-double-click`; date I/O uses `GDateTime` (`gtkCalendarGetDate` / `gtkCalendarSelectDay`).
 
-**Tree notes:** `gtree` / `gvarbrowser` use `GtkColumnView` + `GtkTreeListModel` + `GtkTreeExpander` (not deprecated `GtkTreeView`). Offspring / workspace children load lazily via the tree-list create callback. `gvarbrowser` rebuilds on workspace changes (MVP); DnD drop-source deferred with the rest of DnD.
+**DnD notes:** `GtkDragSource` + `GtkDropTargetAsync` (`formats = NULL`) with explicit `gdkDropFinish`. Built-in TextView drop controllers are stripped first. **Never share one `GdkContentFormats` across `gtk_drop_target_async_new` calls** — that API is transfer-full and unrefs (shared formats UAF). Notebook: strip **all** `DropControllerMotion` under the notebook (tabs **and** scroll arrows — arrows were still cycling pages during drag). In-app payload in `.dnd.env$active`. Content via heap `GValue` provider; `prepare` must **return** the provider (Rgtk4 marshal `G_TYPE_OBJECT`). `gvarbrowser` is an object drop source. `gdf$add_dnd_columns` still stub-only.
+
+**Tree notes:** `gtree` / `gvarbrowser` use `GtkColumnView` + `GtkTreeListModel` + `GtkTreeExpander` (not deprecated `GtkTreeView`). Offspring / workspace children load lazily via the tree-list create callback. `gvarbrowser` rebuilds on workspace changes (MVP); object drop source enabled via shared DnD helpers.
 
 **Graphics notes:** First cut uses [unigd](https://github.com/nx10/unigd) as a portable R device and blits PNG into `GtkPicture` (poll on plot/size change). No rubber-band / locator. Follow-up once iNZight boots: httpgd (or other web renderers) in a WebView pane.
 

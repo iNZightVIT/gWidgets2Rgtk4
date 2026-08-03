@@ -33,6 +33,7 @@ Collate:
     'gWidgets2Rgtk4-package.R'
     'misc.R'
     'gtk-misc.R'
+    'dnd.R'
     'GComponent.R'
     'GContainer.R'
     'GWidget.R'

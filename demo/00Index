@@ -7,3 +7,4 @@ graphics	Embeddable plots via unigd + GtkPicture
 gtable	Selection table (ColumnView)
 gdf	Editable data frame (ColumnView)
 misc	Widget gallery (incl. gcalendar), gtree, gvarbrowser
+dnd	Drag-and-drop: text, object, gvarbrowser → V1/V2

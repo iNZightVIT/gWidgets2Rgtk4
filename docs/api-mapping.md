@@ -53,7 +53,7 @@ Prefer Rgtk4 helpers where present:
 | GTK2 | GTK4 |
 |------|------|
 | `button-press-event` / GdkEvent | `GtkGestureClick` and related controllers |
-| `gtkDragSourceSet` / targets | GTK4 drag-and-drop APIs |
+| `gtkDragSourceSet` / targets | GTK4 `GtkDragSource` / `GtkDropTarget` via `dnd.R` |
 
 Implement DnD only where gWidgets2 exposes it and iNZight needs it; do not block Phase 1 on full DnD parity.
 

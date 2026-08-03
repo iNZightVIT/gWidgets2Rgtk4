@@ -26,10 +26,20 @@ GNotebook <- setRefClass(
     },
     make_widget = function(tab.pos) {
       widget <<- gtkNotebookNew()
+      ## Scroll arrows also get DropControllerMotion and cycle pages during
+      ## any drag; keep scrollable but strip those controllers after pages add.
       gtkNotebookSetScrollable(widget, TRUE)
       gtkNotebookSetTabPos(widget, .tab_pos_to_gtk(tab.pos))
       initFields(block = widget, page_labels = character(0),
                  change_signal = "switch-page")
+      ## Arrows may appear on map/allocate — strip again then.
+      tryCatch(
+        gSignalConnectR(widget, "map", function(w) {
+          .dnd_notebook_disable_tab_hover_switch(w)
+          NULL
+        }),
+        error = function(e) invisible(NULL)
+      )
     },
     get_value = function(...) as.integer(gtkNotebookGetCurrentPage(widget)) + 1L,
     set_value = function(value, ...) {
@@ -68,6 +78,9 @@ GNotebook <- setRefClass(
       }
       set_value(get_length())
       child_bookkeeping(child)
+      ## GTK switches notebook pages when a drag hovers a tab; disable that
+      ## so in-widget DnD does not flip tabs under the pointer.
+      .dnd_notebook_disable_tab_hover_switch(widget)
     },
     dispose_child = function(child) {
       ## remove page containing child

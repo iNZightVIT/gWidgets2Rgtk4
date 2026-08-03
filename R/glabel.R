@@ -90,6 +90,8 @@ GLabel <- setRefClass(
     set_angle = function(angle) {
       ## GTK4 Label angle removed in some versions; no-op
       invisible(NULL)
-    }
+    },
+    ## DnD on the GtkLabel itself (GTK4 picks the leaf under the pointer)
+    handler_widget = function() widget
   )
 )

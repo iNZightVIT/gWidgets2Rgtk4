@@ -70,7 +70,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | `gtable` | `gtable.R` | — | High | done | ColumnView; header-menu follow-up (see plan) |
 | `gdf` | `gdf.R` | — | Very High | mvp | EditableLabel; set_frame/get_frame; header-menu later |
 | `gtree` | `gtree.R` | — | High | done | ColumnView + TreeListModel + TreeExpander |
-| `gvarbrowser` | `gvarbrowser.R` | — | High | mvp | WSWatcherModel; full rebuild on update; DnD deferred |
+| `gvarbrowser` | `gvarbrowser.R` | — | High | mvp | WSWatcherModel; object drop source; rebuild on update |
 | `gcalendar` | `gcalendar.R` | — | Medium | done | Entry + modal GtkCalendar; GDateTime |
 
 ## Cross-cutting (many files)
@@ -79,7 +79,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 |---------|--------|-------|
 | EventBox wrappers | done | Removed by default |
 | Stock icons | done | Compatibility map in `gtk-misc.R` / `icons.R` |
-| DnD | deferred | After core; GTK4 APIs |
+| DnD | done | `dnd.R` + GComponent; gdf column headers deferred |
 | Font setters | deferred | CSS / Pango differences |
 | expand/fill/anchor | done | Mapped in packing helpers |
 | Popup menus | done | PopoverMenu + GestureClick on GComponent |
