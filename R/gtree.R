@@ -711,11 +711,12 @@ GTree <- setRefClass(
     },
 
     set_multiple = function(value) {
+      ## Capture selection before flipping the mode flag (get_index branches on it)
+      cur <- get_index()
       multiple <<- isTRUE(value)
       ## Rebuild selection model with same tree
       if (is.null(tree_model))
         return(invisible(NULL))
-      cur <- get_index()
       if (isTRUE(multiple))
         selection <<- gtkMultiSelectionNew(tree_model)
       else {
