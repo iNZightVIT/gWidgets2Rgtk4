@@ -39,6 +39,8 @@ GExpandGroup <- setRefClass(
     set_names = function(value, ...) gtkExpanderSetLabel(block, as.character(value)[1]),
     get_visible = function() as.logical(gtkExpanderGetExpanded(block)),
     set_visible = function(value) gtkExpanderSetExpanded(block, as.logical(value)),
+    ## Expander chrome (label) lives on block, not the inner box
+    style_widget = function() block,
     add_handler_changed = function(handler, action = NULL, ...) {
       add_handler("notify::expanded", handler, action, ...)
     }

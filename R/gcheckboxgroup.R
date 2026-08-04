@@ -70,6 +70,8 @@ GCheckboxGroup <- setRefClass(
         })
       }
     },
-    get_length = function(...) length(widgets)
+    get_length = function(...) length(widgets),
+    ## Style all checkbox labels via descendant selector on the box
+    style_widget = function() block
   )
 )

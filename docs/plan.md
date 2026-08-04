@@ -48,7 +48,9 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
 3. `gtable`, then `gdf` ✅
 4. `gtree`, `gvarbrowser` ✅
-5. Remainder: `gcalendar` ✅, DnD ✅ (incl. gdf column headers), fonts, edge packing
+5. Remainder: `gcalendar` ✅, DnD ✅ (incl. gdf column headers), fonts ✅, edge packing
+
+**Font notes:** Widget `font<-` maps the portable gWidgets2 spec to CSS (`GtkCssProvider` + unique class; `.class, .class label` so compounds style label text). Toolkit extras: `css<-`, `addCssClass` / `removeCssClass`, `loadCss`, and `options("gWidgets2Rgtk4.font.*")` / `options("gWidgets2Rgtk4.css")`. `gtext` uses `GtkTextTag` for `font.attr` / selection / insert (insert then `ApplyTagByName`).
 
 **Calendar notes:** Entry + “Date…” opens a modal `GtkCalendar` dialog (OK/Cancel). GTK4 removed `day-selected-double-click`; date I/O uses `GDateTime` (`gtkCalendarGetDate` / `gtkCalendarSelectDay`).
 

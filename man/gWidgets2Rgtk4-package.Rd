@@ -34,6 +34,14 @@
 Implements the \pkg{gWidgets2} API using \pkg{Rgtk4} (GTK4).
 Design docs live in the source tree under \code{docs/}.
 
+Font and style: \code{font<-} maps the portable font specification to
+CSS. Toolkit helpers \code{\link{css}}, \code{\link{loadCss}},
+\code{\link{addCssClass}} allow direct CSS. Defaults can be remapped via
+\code{options("gWidgets2Rgtk4.font.family")},
+\code{options("gWidgets2Rgtk4.font.weight")},
+\code{options("gWidgets2Rgtk4.font.scale.base")}, and an app stylesheet
+via \code{options("gWidgets2Rgtk4.css")}.
+
 Implements the iNZight-facing surface: `set_frame` / `get_frame`,
 `set_editable`, `remove_popup_menu`, `add_dnd_columns` (header text
 drag sources), cell-change handlers. Full RGtk2 command-stack /

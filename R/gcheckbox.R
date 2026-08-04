@@ -41,7 +41,9 @@ GCheckbox <- setRefClass(
     },
     set_items = function(value, i, j, ...) {
       gtkCheckButtonSetLabel(widget, as.character(value)[1])
-    }
+    },
+    ## CSS rule styles .class label descendants
+    style_widget = function() widget
   )
 )
 

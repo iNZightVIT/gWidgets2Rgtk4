@@ -35,6 +35,8 @@ test_that("GComponent enabled/visible/tooltip/size/tag/invalid", {
   expect_false(b$is_invalid())
 
   b$set_font(list(size = 12))
+  expect_equal(font(b)$size, 12)
+  expect_true(nzchar(b$.css_class))
   expect_equal(length(b), 1L)
   expect_true(isExtant(b))
   focus(b) <- TRUE

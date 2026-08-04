@@ -82,6 +82,8 @@ GButton <- setRefClass(
     remove_border = function() {
       ## GTK4: no relief style; no-op
       invisible(NULL)
-    }
+    },
+    ## Style the button so CSS also hits the child label
+    style_widget = function() widget
   )
 )

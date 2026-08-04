@@ -1,4 +1,4 @@
-##' @include dnd.R
+##' @include font.R
 NULL
 
 ##' Base class for widgets and containers
@@ -13,7 +13,12 @@ GComponent <- setRefClass(
     .e = "environment",
     ..invalid = "logical",
     ..invalid_reason = "character",
-    coerce_with = "FunctionOrNULL"
+    coerce_with = "FunctionOrNULL",
+    .css_class = "character",
+    .css_provider = "ANY",
+    .css_font_decls = "character",
+    .css_extra_decls = "character",
+    .font_info = "list"
   ),
   methods = list(
     initialize = function(toolkit = guiToolkit(), ...,
@@ -25,6 +30,15 @@ GComponent <- setRefClass(
         default_expand <<- NULL
       if (is(default_fill, "uninitializedField"))
         default_fill <<- NULL
+      if (is(.css_class, "uninitializedField"))
+        .css_class <<- ""
+      if (is(.css_font_decls, "uninitializedField"))
+        .css_font_decls <<- ""
+      if (is(.css_extra_decls, "uninitializedField"))
+        .css_extra_decls <<- ""
+      if (is(.font_info, "uninitializedField"))
+        .font_info <<- list()
+      .ensure_app_css()
       callSuper(...)
     },
     show = function() {
@@ -47,8 +61,49 @@ GComponent <- setRefClass(
     set_tooltip = function(value) {
       gtkWidgetSetTooltipText(widget, paste(value, collapse = "\n"))
     },
+    ## Widget that receives CSS classes / provider (override for compounds)
+    style_widget = function() {
+      if (!is.null(widget) && !is(widget, "uninitializedField"))
+        getWidget(widget)
+      else if (!is.null(block) && !is(block, "uninitializedField"))
+        getBlock(block)
+      else
+        NULL
+    },
+    get_font = function() {
+      if (is.null(.font_info)) list() else .font_info
+    },
     set_font = function(value) {
-      ## Fonts deferred (CSS / Pango); no-op in Phase 1
+      .ensure_app_css()
+      extra_css <- NULL
+      if (is.character(value) && length(value) == 1L && is.null(names(value))) {
+        ## Whole value is raw CSS declarations
+        .css_font_decls <<- as.character(value)[1]
+        .font_info <<- list(css = .css_font_decls)
+      } else {
+        if (!is.list(value))
+          value <- as.list(value)
+        if (!is.null(value$css)) {
+          extra_css <- as.character(value$css)[1]
+          value$css <- NULL
+        }
+        .font_info <<- value
+        .css_font_decls <<- font_spec_to_css(value)
+        if (!is.null(extra_css) && nzchar(extra_css)) {
+          ## Merge css= key into font decls (still distinct from css<-)
+          .css_font_decls <<- .combine_css_decls(.css_font_decls, extra_css, NULL)
+          .font_info$css <<- extra_css
+        }
+      }
+      .refresh_widget_css(.self)
+      invisible(NULL)
+    },
+    get_css = function() {
+      if (is.null(.css_extra_decls) || !nzchar(.css_extra_decls)) "" else .css_extra_decls
+    },
+    set_css = function(value) {
+      .ensure_app_css()
+      .apply_extra_css(.self, value)
       invisible(NULL)
     },
     get_attr = function(key) {
