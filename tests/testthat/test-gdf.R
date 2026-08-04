@@ -41,7 +41,63 @@ test_that("gdf set_editable and remove_popup_menu / add_dnd_columns", {
   gd$set_editable(FALSE, 1)
   expect_false(gd$is_editable(1))
   expect_silent(gd$remove_popup_menu())
+  expect_false(isTRUE(as.logical(gtkColumnViewGetReorderable(gd$widget))))
+
+  visible(w) <- TRUE
+  pump_gtk()
   expect_silent(gd$add_dnd_columns())
+  st <- gdf_header_dnd_stats(gd)
+  expect_equal(st$headers, 2L)
+  expect_equal(st$drag_sources, 2L)
+  expect_equal(st$title_clicks, 0L)
+  expect_equal(st$header_drags, 0L)
+  ## Re-entrant: does not stack sources
+  gd$add_dnd_columns()
+  expect_equal(gdf_header_dnd_stats(gd)$drag_sources, 2L)
+  dispose(w)
+})
+
+test_that("gdf column DnD rewires after set_frame", {
+  w <- gwindow("df-dnd", visible = FALSE, width = 420, height = 280)
+  gd <- gdf(data.frame(mpg = 1:2, cyl = 3:4), container = w)
+  visible(w) <- TRUE
+  pump_gtk()
+  gd$add_dnd_columns()
+  expect_equal(gdf_header_dnd_stats(gd)$drag_sources, 2L)
+
+  ## Per-column prepare closures (local() env) — attach and resolve payload.
+  titles <- .dnd_columnview_header_titles(gd$widget)
+  payloads <- c("mpg", "cyl")
+  for (k in seq_along(titles)) {
+    local({
+      nm <- payloads[k]
+      .dnd_attach_text_source(titles[[k]], function() nm)
+      ## Mimic prepare side-effect used by drop targets
+      .dnd_set_active(nm)
+      expect_equal(.dnd_resolve_dropdata(), nm)
+      .dnd_clear_active()
+    })
+  }
+  expect_equal(.count_matching_controllers(titles, .dnd_is_drag_source), 2L)
+
+  gd$set_frame(data.frame(hp = 1:2, wt = 3:4, qsec = 5:6))
+  pump_gtk(50L)
+  ## dnd_columns_wanted stays TRUE — rewire without another add_dnd_columns.
+  st <- gdf_header_dnd_stats(gd)
+  expect_equal(st$headers, 3L)
+  expect_equal(st$drag_sources, 3L)
+  expect_equal(st$title_clicks, 0L)
+  expect_equal(names(gd), c("hp", "wt", "qsec"))
+  dispose(w)
+})
+
+test_that("gdf add_dnd_columns on empty frame is silent", {
+  w <- gwindow("df-empty", visible = FALSE)
+  gd <- gdf(data.frame(), container = w)
+  visible(w) <- TRUE
+  pump_gtk(20L)
+  expect_silent(gd$add_dnd_columns())
+  expect_equal(gdf_header_dnd_stats(gd)$headers, 0L)
   dispose(w)
 })
 

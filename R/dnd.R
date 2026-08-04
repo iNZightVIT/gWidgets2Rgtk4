@@ -177,3 +177,148 @@ NULL
   tryCatch(walk(nb_widget), error = function(e) invisible(NULL))
   invisible(NULL)
 }
+
+.dnd_is_drag_source <- function(ctrl) {
+  if (is.null(ctrl))
+    return(FALSE)
+  if (inherits(ctrl, "GtkDragSource"))
+    return(TRUE)
+  gt <- attr(ctrl, "glib_type")
+  is.character(gt) && any(gt %in% c("DragSource", "GtkDragSource"))
+}
+
+.dnd_is_gesture_click <- function(ctrl) {
+  if (is.null(ctrl))
+    return(FALSE)
+  if (inherits(ctrl, "GtkGestureClick"))
+    return(TRUE)
+  gt <- attr(ctrl, "glib_type")
+  is.character(gt) && any(gt %in% c("GestureClick", "GtkGestureClick"))
+}
+
+.dnd_is_gesture_drag <- function(ctrl) {
+  if (is.null(ctrl))
+    return(FALSE)
+  ## DragSource subclasses GestureDrag — do not treat it as a plain drag.
+  if (.dnd_is_drag_source(ctrl))
+    return(FALSE)
+  if (inherits(ctrl, "GtkGestureDrag"))
+    return(TRUE)
+  gt <- attr(ctrl, "glib_type")
+  is.character(gt) && any(gt %in% c("GestureDrag", "GtkGestureDrag"))
+}
+
+.dnd_remove_controllers_matching <- function(widget, predicate) {
+  model <- tryCatch(gtkWidgetObserveControllers(widget), error = function(e) NULL)
+  if (is.null(model))
+    return(invisible(NULL))
+  n <- tryCatch(as.integer(gListModelGetNItems(model))[1], error = function(e) 0L)
+  if (!length(n) || is.na(n) || n < 1L)
+    return(invisible(NULL))
+  to_remove <- list()
+  for (i in seq_len(n) - 1L) {
+    ctrl <- tryCatch(gListModelGetObject(model, as.integer(i)), error = function(e) NULL)
+    if (isTRUE(predicate(ctrl)))
+      to_remove[[length(to_remove) + 1L]] <- ctrl
+  }
+  for (ctrl in to_remove) {
+    tryCatch(gtkWidgetRemoveController(widget, ctrl), error = function(e) invisible(NULL))
+  }
+  invisible(NULL)
+}
+
+.dnd_remove_drag_sources <- function(widget) {
+  .dnd_remove_controllers_matching(widget, .dnd_is_drag_source)
+}
+
+.dnd_remove_gesture_clicks <- function(widget) {
+  .dnd_remove_controllers_matching(widget, .dnd_is_gesture_click)
+}
+
+.dnd_remove_gesture_drags <- function(widget) {
+  .dnd_remove_controllers_matching(widget, .dnd_is_gesture_drag)
+}
+
+## GtkColumnView header row: css "header" → children css "button"
+## (GtkColumnViewTitle), one per column, in column order.
+.dnd_columnview_header_row <- function(view) {
+  if (is.null(view))
+    return(NULL)
+  ch <- tryCatch(gtkWidgetGetFirstChild(view), error = function(e) NULL)
+  while (!is.null(ch)) {
+    css <- tryCatch(gtkWidgetGetCssName(ch), error = function(e) "")
+    if (identical(as.character(css)[1], "header"))
+      return(ch)
+    ch <- tryCatch(gtkWidgetGetNextSibling(ch), error = function(e) NULL)
+  }
+  NULL
+}
+
+.dnd_columnview_header_titles <- function(view) {
+  out <- list()
+  header <- .dnd_columnview_header_row(view)
+  if (is.null(header))
+    return(out)
+  btn <- tryCatch(gtkWidgetGetFirstChild(header), error = function(e) NULL)
+  while (!is.null(btn)) {
+    css <- tryCatch(gtkWidgetGetCssName(btn), error = function(e) "")
+    if (identical(as.character(css)[1], "button"))
+      out[[length(out) + 1L]] <- btn
+    btn <- tryCatch(gtkWidgetGetNextSibling(btn), error = function(e) NULL)
+  }
+  out
+}
+
+## ColumnViewTitle installs GestureClick that CLAIMS on press (sort/menu),
+## which denies GtkDragSource. Header GestureDrag owns resize/reorder.
+## Strip those before attaching our text DragSource.
+.dnd_prepare_columnview_headers_for_dnd <- function(view) {
+  header <- .dnd_columnview_header_row(view)
+  if (!is.null(header)) {
+    .dnd_remove_gesture_drags(header)
+    .dnd_remove_gesture_clicks(header)
+  }
+  for (title in .dnd_columnview_header_titles(view))
+    .dnd_remove_gesture_clicks(title)
+  invisible(NULL)
+}
+
+## Attach a text DragSource; get_text() is called from prepare.
+## Re-entrant: strips existing DragSources on the widget first.
+.dnd_attach_text_source <- function(widget, get_text) {
+  if (is.null(widget) || !is.function(get_text))
+    return(invisible(NULL))
+  force(get_text)
+  .dnd_remove_drag_sources(widget)
+  src <- gtkDragSourceNew()
+  gtkDragSourceSetActions(src, .dnd_action_copy)
+  tryCatch(
+    gtkEventControllerSetPropagationPhase(src, 1L), ## CAPTURE
+    error = function(e) invisible(NULL)
+  )
+  state <- new.env(parent = emptyenv())
+  state$provider <- NULL
+  gSignalConnectR(src, "prepare", function(source, x, y) {
+    wire <- tryCatch({
+      val <- get_text()
+      if (is.null(val) || (length(val) == 0 && !is.list(val)))
+        ""
+      else
+        paste(as.character(val), collapse = "\n")
+    }, error = function(e) {
+      warning("column DnD prepare error: ", conditionMessage(e), call. = FALSE)
+      ""
+    })
+    .dnd_set_active(wire)
+    provider <- .dnd_text_provider(wire)
+    state$provider <- provider
+    provider
+  })
+  gSignalConnectR(src, "drag-end", function(source, drag, delete_data) {
+    state$provider <- NULL
+    .dnd_clear_active()
+    NULL
+  })
+  gtkWidgetAddController(widget, src)
+  invisible(src)
+}

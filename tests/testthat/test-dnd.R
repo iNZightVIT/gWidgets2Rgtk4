@@ -72,3 +72,26 @@ test_that("gvarbrowser registers object drop source", {
   try(vb$stop_timer(), silent = TRUE)
   dispose(w)
 })
+
+test_that("columnview header helpers strip competing gestures", {
+  w <- gwindow("dnd-hdr", visible = FALSE, width = 400, height = 260)
+  gd <- gdf(data.frame(a = 1:2, b = 3:4, c = 5:6), container = w)
+  visible(w) <- TRUE
+  pump_gtk()
+
+  titles <- .dnd_columnview_header_titles(gd$widget)
+  expect_equal(length(titles), 3L)
+  expect_true(.count_matching_controllers(titles, .dnd_is_gesture_click) >= 3L)
+
+  .dnd_prepare_columnview_headers_for_dnd(gd$widget)
+  expect_equal(.count_matching_controllers(titles, .dnd_is_gesture_click), 0L)
+  hdr <- .dnd_columnview_header_row(gd$widget)
+  expect_false(is.null(hdr))
+  expect_equal(.count_matching_controllers(list(hdr), .dnd_is_gesture_drag), 0L)
+
+  ## attach_text_source is re-entrant and sets active payload via prepare path
+  .dnd_attach_text_source(titles[[1]], function() "colA")
+  .dnd_attach_text_source(titles[[1]], function() "colA")
+  expect_equal(.count_matching_controllers(list(titles[[1]]), .dnd_is_drag_source), 1L)
+  dispose(w)
+})

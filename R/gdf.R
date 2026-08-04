@@ -25,8 +25,9 @@ NULL
 ##' Minimal editable data-frame widget (ColumnView + EditableLabel)
 ##'
 ##' Implements the iNZight-facing surface: `set_frame` / `get_frame`,
-##' `set_editable`, `remove_popup_menu`, `add_dnd_columns` (stub),
-##' cell-change handlers. Full RGtk2 command-stack / coerce menus deferred.
+##' `set_editable`, `remove_popup_menu`, `add_dnd_columns` (header text
+##' drag sources), cell-change handlers. Full RGtk2 command-stack /
+##' coerce menus deferred.
 ##'
 ##' @rdname gWidgets2Rgtk4-package
 GDf <- setRefClass(
@@ -42,7 +43,9 @@ GDf <- setRefClass(
     cell_map = "ANY",
     column_objs = "list",
     col_names = "character",
-    block_edit_notify = "logical"
+    block_edit_notify = "logical",
+    dnd_columns_wanted = "logical",
+    dnd_retry_id = "ANY"
   ),
   methods = list(
     initialize = function(toolkit = NULL, items = NULL,
@@ -51,6 +54,8 @@ GDf <- setRefClass(
       view <- gtkColumnViewNew(NULL)
       gtkWidgetSetHexpand(view, TRUE)
       gtkWidgetSetVexpand(view, TRUE)
+      ## Built-in header reorder DnD fights column-name export drags.
+      gtkColumnViewSetReorderable(view, FALSE)
 
       scrolled <- gtkScrolledWindowNew()
       gtkScrolledWindowSetChild(scrolled, view)
@@ -69,6 +74,8 @@ GDf <- setRefClass(
         data_env = new.env(parent = emptyenv()),
         cell_map = new.env(parent = emptyenv(), hash = TRUE),
         block_edit_notify = FALSE,
+        dnd_columns_wanted = FALSE,
+        dnd_retry_id = NULL,
         change_signal = "changed",
         default_expand = TRUE,
         default_fill = TRUE
@@ -240,6 +247,11 @@ GDf <- setRefClass(
       }
       column_objs <<- built
       col_names <<- as.character(nms)
+      ## Column rebuild recreates header widgets; re-attach if enabled.
+      if (isTRUE(dnd_columns_wanted)) {
+        if (wire_column_dnd() < length(col_names))
+          schedule_column_dnd_retry()
+      }
       invisible(NULL)
     },
 
@@ -295,9 +307,52 @@ GDf <- setRefClass(
     get_editable = function(j, ...) is_editable(j, ...),
 
     remove_popup_menu = function() invisible(NULL),
+
+    ## Attach text DragSources to ColumnView header title widgets so
+    ## dragging a header exports the column name (iNZight V1/V2 boxes).
+    wire_column_dnd = function() {
+      .dnd_prepare_columnview_headers_for_dnd(widget)
+      titles <- .dnd_columnview_header_titles(widget)
+      nms <- col_names
+      if (!length(nms) && !is.null(items) && ncol(items))
+        nms <- names(items)
+      if (!length(titles) || !length(nms))
+        return(0L)
+      n <- min(length(titles), length(nms))
+      for (k in seq_len(n)) {
+        ## Fresh env per iteration so prepare closures don't share nm.
+        local({
+          nm <- as.character(nms[k])[1]
+          .dnd_attach_text_source(titles[[k]], function() nm)
+        })
+      }
+      as.integer(n)
+    },
+
+    schedule_column_dnd_retry = function() {
+      if (!is.null(dnd_retry_id))
+        return(invisible(NULL))
+      host <- .self
+      ## Headers appear after realize/layout; one short retry is enough.
+      dnd_retry_id <<- tryCatch(
+        gTimeoutAdd(50L, function() {
+          host$dnd_retry_id <- NULL
+          if (isTRUE(host$dnd_columns_wanted))
+            host$wire_column_dnd()
+          FALSE
+        }),
+        error = function(e) NULL
+      )
+      invisible(NULL)
+    },
+
     add_dnd_columns = function() {
-      ## GTK4 DnD deferred; match RGtk2 side-effect of clearing header popups
+      ## Match RGtk2: clear header popups, then enable header name drags.
       remove_popup_menu()
+      dnd_columns_wanted <<- TRUE
+      n <- wire_column_dnd()
+      if (n < 1L && length(col_names))
+        schedule_column_dnd_retry()
       invisible(NULL)
     },
 

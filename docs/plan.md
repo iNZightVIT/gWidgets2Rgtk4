@@ -48,17 +48,17 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
 3. `gtable`, then `gdf` ✅
 4. `gtree`, `gvarbrowser` ✅
-5. Remainder: `gcalendar` ✅, DnD ✅ (gdf column DnD deferred), fonts, edge packing
+5. Remainder: `gcalendar` ✅, DnD ✅ (incl. gdf column headers), fonts, edge packing
 
 **Calendar notes:** Entry + “Date…” opens a modal `GtkCalendar` dialog (OK/Cancel). GTK4 removed `day-selected-double-click`; date I/O uses `GDateTime` (`gtkCalendarGetDate` / `gtkCalendarSelectDay`).
 
-**DnD notes:** `GtkDragSource` + `GtkDropTargetAsync` (`formats = NULL`) with explicit `gdkDropFinish`. Built-in TextView drop controllers are stripped first. **Never share one `GdkContentFormats` across `gtk_drop_target_async_new` calls** — that API is transfer-full and unrefs (shared formats UAF). Notebook: strip **all** `DropControllerMotion` under the notebook (tabs **and** scroll arrows — arrows were still cycling pages during drag). In-app payload in `.dnd.env$active`. Content via heap `GValue` provider; `prepare` must **return** the provider (Rgtk4 marshal `G_TYPE_OBJECT`). `gvarbrowser` is an object drop source. `gdf$add_dnd_columns` still stub-only.
+**DnD notes:** `GtkDragSource` + `GtkDropTargetAsync` (`formats = NULL`) with explicit `gdkDropFinish`. Built-in TextView drop controllers are stripped first. **Never share one `GdkContentFormats` across `gtk_drop_target_async_new` calls** — that API is transfer-full and unrefs (shared formats UAF). Notebook: strip **all** `DropControllerMotion` under the notebook (tabs **and** scroll arrows — arrows were still cycling pages during drag). In-app payload in `.dnd.env$active`. Content via heap `GValue` provider; `prepare` must **return** the provider (Rgtk4 marshal `G_TYPE_OBJECT`). `gvarbrowser` is an object drop source. `gdf$add_dnd_columns` attaches text DragSources to ColumnView header titles (`header` → `button`); strips title `GestureClick` (claims press → blocked drag) and header `GestureDrag`; `gtkColumnViewSetReorderable(FALSE)`.
 
 **Tree notes:** `gtree` / `gvarbrowser` use `GtkColumnView` + `GtkTreeListModel` + `GtkTreeExpander` (not deprecated `GtkTreeView`). Offspring / workspace children load lazily via the tree-list create callback. `gvarbrowser` rebuilds on workspace changes (MVP); object drop source enabled via shared DnD helpers.
 
 **Graphics notes:** First cut uses [unigd](https://github.com/nx10/unigd) as a portable R device and blits PNG into `GtkPicture` (poll on plot/size change). No rubber-band / locator. Follow-up once iNZight boots: httpgd (or other web renderers) in a WebView pane.
 
-**Table notes:** `gtable` / `gdf` use `GtkColumnView` with an R `data.frame` as source of truth. `gdf` edits via `GtkEditableLabel`; exposes `set_frame` / `get_frame` / `set_editable` / `add_dnd_columns` (DnD stub). Undo stack deferred.
+**Table notes:** `gtable` / `gdf` use `GtkColumnView` with an R `data.frame` as source of truth. `gdf` edits via `GtkEditableLabel`; exposes `set_frame` / `get_frame` / `set_editable` / `add_dnd_columns` (header name drag). Undo stack deferred.
 
 **Follow-up — column header menus:** GTK4 supports this natively via `gtkColumnViewColumnSetHeaderMenu()` + `GMenuModel` (right-click). Reuse `build_gmenu_model()` / `gaction`; insert the action group on the ColumnView. Easy for `gtable` (sort / rename); `gdf` needs column mutate helpers first (coerce / insert / delete). `remove_popup_menu()` should clear header-menu. Radio items in menus still limited in our gmenu builder.
 

@@ -79,7 +79,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 |---------|--------|-------|
 | EventBox wrappers | done | Removed by default |
 | Stock icons | done | Compatibility map in `gtk-misc.R` / `icons.R` |
-| DnD | done | `dnd.R` + GComponent; gdf column headers deferred |
+| DnD | done | `dnd.R` + GComponent; gdf column headers via `add_dnd_columns` |
 | Font setters | deferred | CSS / Pango differences |
 | expand/fill/anchor | done | Mapped in packing helpers |
 | Popup menus | done | PopoverMenu + GestureClick on GComponent |

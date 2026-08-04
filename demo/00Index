@@ -6,5 +6,7 @@ dialogs	gmessage, gconfirm, ginput, galert, gfile
 graphics	Embeddable plots via unigd + GtkPicture
 gtable	Selection table (ColumnView)
 gdf	Editable data frame (ColumnView)
+gdf-column-dnd	Drag gdf column headers onto a V1 drop target
+gdf-column-headers-spike	Dump ColumnView CSS tree (header discovery)
 misc	Widget gallery (incl. gcalendar), gtree, gvarbrowser
 dnd	Drag-and-drop: text, object, gvarbrowser → V1/V2

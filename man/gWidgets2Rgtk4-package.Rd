@@ -35,8 +35,9 @@ Implements the \pkg{gWidgets2} API using \pkg{Rgtk4} (GTK4).
 Design docs live in the source tree under \code{docs/}.
 
 Implements the iNZight-facing surface: `set_frame` / `get_frame`,
-`set_editable`, `remove_popup_menu`, `add_dnd_columns` (stub),
-cell-change handlers. Full RGtk2 command-stack / coerce menus deferred.
+`set_editable`, `remove_popup_menu`, `add_dnd_columns` (header text
+drag sources), cell-change handlers. Full RGtk2 command-stack /
+coerce menus deferred.
 
 Offspring rows are loaded lazily via \code{offspring(path, offspring.data)}.
 Node state lives in an R environment keyed by string ids (GtkStringList).
