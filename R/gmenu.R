@@ -22,6 +22,28 @@ build_gmenu_model <- function(items, action_prefix = "gwa") {
   list(model = model, group = group)
 }
 
+##' GtkPopoverMenuBar requires every toplevel model item to be a submenu.
+##' iNZight uses disabled gaction "placeholders" (Dataset/Variables/Plot with
+##' no data) as toplevel entries — wrap those so GTK does not warn
+##' "Don't know how to handle this item".
+##' @noRd
+normalize_menubar_toplevel <- function(items) {
+  if (!length(items))
+    return(items)
+  nms <- names(items)
+  out <- vector("list", length(items))
+  for (i in seq_along(items)) {
+    item <- items[[i]]
+    if (is.list(item) && !is(item, "GComponent"))
+      out[[i]] <- item
+    else
+      out[[i]] <- list(item)
+  }
+  if (!is.null(nms))
+    names(out) <- nms
+  out
+}
+
 ##' Next unique stateful action name within a group builder pass
 ##' @noRd
 .next_menu_state_name <- function(prefix = "st") {
@@ -210,10 +232,11 @@ GMenuBar <- setRefClass(
     rebuild_menubar = function(items = menu_list) {
       rebuilding <<- TRUE
       on.exit(rebuilding <<- FALSE)
-      built <- build_gmenu_model(items, action_prefix)
+      menu_list <<- items
+      ## Store raw list (placeholders stay as gactions); normalize only for GTK.
+      built <- build_gmenu_model(normalize_menubar_toplevel(items), action_prefix)
       menu_model <<- built$model
       action_group <<- built$group
-      menu_list <<- items
       if (is(widget, "uninitializedField") || is.null(widget)) {
         widget <<- gtkPopoverMenuBarNewFromModel(menu_model)
         block <<- widget

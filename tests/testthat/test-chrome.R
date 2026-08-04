@@ -122,3 +122,22 @@ test_that("gmenu accepts gradio and gcheckbox without skip warning", {
   expect_true(!is.null(built$model))
   dispose(w)
 })
+
+test_that("gmenu wraps toplevel gaction placeholders for PopoverMenuBar", {
+  ## iNZight Dataset/Variables/Plot when empty — bare gactions at bar level
+  items <- list(
+    File = list(gaction("Import")),
+    Data = gaction("Dataset"),
+    Plot = gaction("Plot")
+  )
+  norm <- normalize_menubar_toplevel(items)
+  expect_true(is.list(norm$File) && !is(norm$File, "GComponent"))
+  expect_true(is.list(norm$Data) && is(norm$Data[[1]], "GAction"))
+  expect_true(is.list(norm$Plot) && is(norm$Plot[[1]], "GAction"))
+
+  w <- gwindow("mb-ph", visible = FALSE)
+  expect_warning(mb <- gmenu(items, container = w), NA)
+  ## Raw list keeps placeholders; GTK model uses wrapped submenus
+  expect_true(is(mb$menu_list$Data, "GAction"))
+  dispose(w)
+})
