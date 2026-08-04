@@ -17,6 +17,7 @@ Depends:
     methods,
     R (>= 4.0.0)
 Imports:
+    digest,
     memoise,
     Rgtk4,
     gWidgets2 (>= 1.0.7)

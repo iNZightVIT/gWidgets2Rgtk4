@@ -322,3 +322,47 @@ NULL
   gtkWidgetAddController(widget, src)
   invisible(src)
 }
+
+## GTK ColumnViewTitle opens header-menu via GestureClick secondary.
+## DnD prep strips that gesture — restore a secondary-only click that
+## pops a PopoverMenu from the column's header GMenuModel.
+.dnd_attach_header_menu_click <- function(title, menu_model, host_widget,
+                                          action_prefix, action_group) {
+  if (is.null(title) || is.null(menu_model) || is.null(action_group))
+    return(invisible(NULL))
+  force(menu_model)
+  force(host_widget)
+  force(action_prefix)
+  force(action_group)
+  force(title)
+  g <- gtkGestureClickNew()
+  ## Listen for all buttons; only act on secondary (3) so primary stays free for drag.
+  gtkGestureSingleSetButton(g, 0L)
+  tryCatch(
+    gtkEventControllerSetPropagationPhase(g, 2L), ## TARGET
+    error = function(e) invisible(NULL)
+  )
+  gSignalConnectR(g, "pressed", function(gest, n_press, x, y) {
+    event <- tryCatch(gtkEventControllerGetCurrentEvent(gest),
+                      error = function(e) NULL)
+    event_btn <- tryCatch(as.integer(gdkButtonEventGetButton(event)),
+                          error = function(e) 0L)
+    if (!identical(event_btn, 3L))
+      return()
+    pop <- gtkPopoverMenuNewFromModel(menu_model)
+    try(gtkPopoverSetHasArrow(pop, FALSE), silent = TRUE)
+    ## Parent to title so it points at the header; actions on host + title.
+    try(gtkWidgetSetParent(pop, title), silent = TRUE)
+    try(gtkWidgetInsertActionGroup(title, action_prefix, action_group),
+        silent = TRUE)
+    if (!is.null(host_widget))
+      try(gtkWidgetInsertActionGroup(host_widget, action_prefix, action_group),
+          silent = TRUE)
+    tryCatch({
+      gtkPopoverSetOffset(pop, as.integer(x - 8L), as.integer(-(20L - y)))
+    }, error = function(e) invisible(NULL))
+    gtkPopoverPopup(pop)
+  })
+  gtkWidgetAddController(title, g)
+  invisible(g)
+}

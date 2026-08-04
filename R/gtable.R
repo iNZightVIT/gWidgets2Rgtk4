@@ -52,7 +52,9 @@ GTable <- setRefClass(
     selection = "ANY",
     data_env = "ANY",
     column_objs = "list",
-    col_names = "character"
+    col_names = "character",
+    header_action_prefixes = "character",
+    header_menu_fun = "ANY"
   ),
   methods = list(
     initialize = function(toolkit = NULL,
@@ -92,6 +94,8 @@ GTable <- setRefClass(
         tooltip_col = tooltip.col,
         column_objs = list(),
         col_names = character(0),
+        header_action_prefixes = character(0),
+        header_menu_fun = NULL,
         string_list = NULL,
         selection = NULL,
         data_env = new.env(parent = emptyenv()),
@@ -132,6 +136,7 @@ GTable <- setRefClass(
     },
 
     clear_columns = function() {
+      remove_popup_menu()
       cols <- column_objs
       for (col in cols)
         try(gtkColumnViewRemoveColumn(widget, col), silent = TRUE)
@@ -184,6 +189,80 @@ GTable <- setRefClass(
       }
       column_objs <<- built
       col_names <<- as.character(nms)
+      add_popup(header_menu_fun)
+    },
+
+    ## Display-column index (1-based among visible columns)
+    data_col_for_view = function(col_index) {
+      cols <- display_columns()
+      col_index <- as.integer(col_index)[1]
+      if (is.na(col_index) || col_index < 1L || col_index > length(cols))
+        return(NA_integer_)
+      as.integer(cols[col_index])
+    },
+
+    sort_by_column = function(col_index, decreasing = FALSE) {
+      data_col <- data_col_for_view(col_index)
+      if (is.na(data_col) || is.null(items) || !nrow(items))
+        return(invisible(NULL))
+      ind <- order(items[, data_col], decreasing = isTRUE(decreasing),
+                   na.last = TRUE)
+      items <<- items[ind, , drop = FALSE]
+      if (length(row_visible) == length(ind))
+        row_visible <<- row_visible[ind]
+      assign("df", items, envir = data_env)
+      rebuild_model()
+      invisible(NULL)
+    },
+
+    default_popup_menu = function(col_index) {
+      "Default header menu: sort ascending/descending, rename"
+      force(col_index)
+      host <- .self
+      list(
+        sort_increasing = gaction("Sort (increasing)", handler = function(h, ...) {
+          host$sort_by_column(col_index, decreasing = FALSE)
+        }),
+        sort_decreasing = gaction("Sort (decreasing)", handler = function(h, ...) {
+          host$sort_by_column(col_index, decreasing = TRUE)
+        }),
+        gseparator(),
+        gaction("Rename column", handler = function(h, ...) {
+          cur_nms <- host$get_names()
+          if (col_index < 1L || col_index > length(cur_nms))
+            return()
+          out <- ginput("Rename column", text = cur_nms[col_index], parent = host)
+          if (is.character(out) && nzchar(out)) {
+            cur_nms[col_index] <- out
+            host$set_names(cur_nms)
+          }
+        })
+      )
+    },
+
+    add_popup_menu = function(menulist) {
+      f <- function(...) menulist
+      add_popup(f)
+    },
+
+    add_popup = function(menu_fun = NULL) {
+      "Install GtkColumnView header menus via SetHeaderMenu + Gio action groups"
+      if (is.null(menu_fun))
+        menu_fun <- .self$default_popup_menu
+      header_menu_fun <<- menu_fun
+      remove_popup_menu()
+      if (!length(column_objs))
+        return(invisible(NULL))
+      prefixes <- character(0)
+      for (k in seq_along(column_objs)) {
+        prefix <- paste0("gwh", k)
+        built <- build_gmenu_model(menu_fun(k), action_prefix = prefix)
+        gtkColumnViewColumnSetHeaderMenu(column_objs[[k]], built$model)
+        gtkWidgetInsertActionGroup(widget, prefix, built$group)
+        prefixes <- c(prefixes, prefix)
+      }
+      header_action_prefixes <<- prefixes
+      invisible(NULL)
     },
 
     rebuild_model = function() {
@@ -384,7 +463,14 @@ GTable <- setRefClass(
       invisible(NULL)
     },
     remove_popup_menu = function() {
-      ## Header popups not installed by default in this backend
+      "Clear header menus and inserted Gio action groups"
+      for (col in column_objs) {
+        try(gtkColumnViewColumnSetHeaderMenu(col, NULL), silent = TRUE)
+      }
+      for (prefix in header_action_prefixes) {
+        try(gtkWidgetInsertActionGroup(widget, prefix, NULL), silent = TRUE)
+      }
+      header_action_prefixes <<- character(0)
       invisible(NULL)
     },
 

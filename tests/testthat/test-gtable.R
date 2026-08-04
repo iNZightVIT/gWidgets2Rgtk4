@@ -72,9 +72,27 @@ test_that("gtable selection handler fires", {
   dispose(w)
 })
 
-test_that("remove_popup_menu is a no-op", {
+test_that("gtable header menus install and remove cleanly", {
+  w <- gwindow("tbl-hdr", visible = FALSE)
+  tbl <- gtable(data.frame(a = c(3, 1, 2), b = letters[1:3],
+                           stringsAsFactors = FALSE), container = w)
+  expect_equal(length(tbl$header_action_prefixes), 2L)
+  expect_true(all(grepl("^gwh", tbl$header_action_prefixes)))
+  tbl$sort_by_column(1L, decreasing = FALSE)
+  expect_equal(tbl[, 1], c(1, 2, 3))
+  tbl$remove_popup_menu()
+  expect_equal(length(tbl$header_action_prefixes), 0L)
+  ## Rebuild reinstalls menus
+  names(tbl) <- c("A", "B")
+  expect_equal(length(tbl$header_action_prefixes), 2L)
+  expect_equal(names(tbl), c("A", "B"))
+  dispose(w)
+})
+
+test_that("remove_popup_menu clears then make_columns restores", {
   w <- gwindow("tbl6", visible = FALSE)
   tbl <- gtable(data.frame(id = 1), container = w)
   expect_silent(tbl$remove_popup_menu())
+  expect_equal(length(tbl$header_action_prefixes), 0L)
   dispose(w)
 })

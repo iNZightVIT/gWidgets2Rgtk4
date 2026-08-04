@@ -25,9 +25,11 @@ NULL
 ##' Minimal editable data-frame widget (ColumnView + EditableLabel)
 ##'
 ##' Implements the iNZight-facing surface: `set_frame` / `get_frame`,
-##' `set_editable`, `remove_popup_menu`, `add_dnd_columns` (header text
-##' drag sources), cell-change handlers. Full RGtk2 command-stack /
-##' coerce menus deferred.
+##' `set_editable`, column mutate helpers (`insert_column`,
+##' `remove_column`, `replace_column`, `coerce_column`), header menus
+##' via `SetHeaderMenu`, `add_dnd_columns` (header text drag sources),
+##' cell-change handlers. Command-stack undo/redo is deferred
+##' (`can_undo` / `undo` are stubs).
 ##'
 ##' @rdname gWidgets2Rgtk4-package
 GDf <- setRefClass(
@@ -45,7 +47,10 @@ GDf <- setRefClass(
     col_names = "character",
     block_edit_notify = "logical",
     dnd_columns_wanted = "logical",
-    dnd_retry_id = "ANY"
+    dnd_retry_id = "ANY",
+    header_action_prefixes = "character",
+    header_action_groups = "list",
+    header_menu_fun = "ANY"
   ),
   methods = list(
     initialize = function(toolkit = NULL, items = NULL,
@@ -76,6 +81,9 @@ GDf <- setRefClass(
         block_edit_notify = FALSE,
         dnd_columns_wanted = FALSE,
         dnd_retry_id = NULL,
+        header_action_prefixes = character(0),
+        header_action_groups = list(),
+        header_menu_fun = NULL,
         change_signal = "changed",
         default_expand = TRUE,
         default_fill = TRUE
@@ -105,6 +113,7 @@ GDf <- setRefClass(
     },
 
     clear_columns = function() {
+      remove_popup_menu()
       for (col in column_objs)
         try(gtkColumnViewRemoveColumn(widget, col), silent = TRUE)
       column_objs <<- list()
@@ -247,11 +256,203 @@ GDf <- setRefClass(
       }
       column_objs <<- built
       col_names <<- as.character(nms)
+      add_popup(header_menu_fun)
       ## Column rebuild recreates header widgets; re-attach if enabled.
       if (isTRUE(dnd_columns_wanted)) {
         if (wire_column_dnd() < length(col_names))
           schedule_column_dnd_retry()
       }
+      invisible(NULL)
+    },
+
+    refresh_after_mutate = function() {
+      assign("df", items, envir = data_env)
+      rebuild_model()
+      make_columns()
+      invisible(NULL)
+    },
+
+    insert_column = function(j, x, nm = "V") {
+      "Insert column at position j (1-based). No undo stack."
+      j <- as.integer(j)[1]
+      nc <- ncol(items)
+      nr <- nrow(items)
+      if (is.na(j) || j < 1L)
+        j <- 1L
+      if (j > nc + 1L)
+        j <- nc + 1L
+      if (!nr)
+        x <- x[0]
+      else
+        x <- rep(x, length.out = nr)
+      nm <- as.character(nm)[1]
+      if (!nzchar(nm))
+        nm <- "V"
+      new_col <- data.frame(setNames(list(x), nm), stringsAsFactors = FALSE,
+                            check.names = FALSE)
+      old_nms <- if (length(col_names) == nc && nc > 0L)
+        col_names
+      else if (nc > 0L)
+        names(items)
+      else
+        character(0)
+      old_ed <- if (length(editable_cols) == nc)
+        editable_cols
+      else
+        rep(TRUE, nc)
+      if (!nc) {
+        items <<- new_col
+        editable_cols <<- TRUE
+        col_names <<- nm
+      } else {
+        before <- if (j <= 1L) NULL else items[, seq_len(j - 1L), drop = FALSE]
+        after <- if (j > nc) NULL else items[, j:nc, drop = FALSE]
+        items <<- cbind(before, new_col, after)
+        ed_before <- if (j <= 1L) logical(0) else old_ed[seq_len(j - 1L)]
+        ed_after <- if (j > nc) logical(0) else old_ed[j:nc]
+        editable_cols <<- c(ed_before, TRUE, ed_after)
+        nms_before <- if (j <= 1L) character(0) else old_nms[seq_len(j - 1L)]
+        nms_after <- if (j > nc) character(0) else old_nms[j:nc]
+        col_names <<- c(nms_before, nm, nms_after)
+        names(items) <<- col_names
+      }
+      if (!length(row_visible) && nrow(items))
+        row_visible <<- rep(TRUE, nrow(items))
+      refresh_after_mutate()
+      invisible(NULL)
+    },
+
+    remove_column = function(j) {
+      "Remove column j (1-based). No undo stack."
+      j <- as.integer(j)[1]
+      nc <- ncol(items)
+      if (is.na(j) || j < 1L || j > nc)
+        return(invisible(NULL))
+      items <<- items[, -j, drop = FALSE]
+      editable_cols <<- editable_cols[-j]
+      col_names <<- col_names[-j]
+      if (ncol(items))
+        names(items) <<- col_names
+      refresh_after_mutate()
+      invisible(NULL)
+    },
+
+    replace_column = function(j, x) {
+      "Replace values in column j. No undo stack."
+      j <- as.integer(j)[1]
+      nc <- ncol(items)
+      nr <- nrow(items)
+      if (is.na(j) || j < 1L || j > nc)
+        return(invisible(NULL))
+      x <- rep(x, length.out = max(1L, nr))
+      if (nr)
+        x <- rep(x, length.out = nr)
+      else
+        x <- x[0]
+      items[[j]] <<- x
+      refresh_after_mutate()
+      invisible(NULL)
+    },
+
+    coerce_column = function(j, coerce_with) {
+      "Coerce column j with coerce_with (e.g. as.character). No undo stack."
+      j <- as.integer(j)[1]
+      if (is.na(j) || j < 1L || j > ncol(items))
+        return(invisible(NULL))
+      if (!is.function(coerce_with))
+        stop("coerce_with must be a function", call. = FALSE)
+      items[[j]] <<- coerce_with(items[[j]])
+      refresh_after_mutate()
+      invisible(NULL)
+    },
+
+    can_undo = function() {
+      "Command-stack undo deferred"
+      FALSE
+    },
+    undo = function() {
+      "Command-stack undo deferred"
+      invisible(NULL)
+    },
+
+    default_popup_menu = function(col_index) {
+      "Header menu: rename, insert/delete, coerce, editable"
+      force(col_index)
+      host <- .self
+      j <- as.integer(col_index)[1]
+      x <- if (!is.null(items) && j >= 1L && j <= ncol(items)) items[[j]] else NULL
+      nm <- if (j >= 1L && j <= length(get_names())) get_names()[j] else ""
+
+      type_of <- function(v) {
+        if (is.null(v)) return("other")
+        if (is.character(v)) return("character")
+        if (is.factor(v)) return("factor")
+        if (is.numeric(v)) return("numeric")
+        if (is.logical(v)) return("logical")
+        "other"
+      }
+      types <- c("other", "character", "factor", "numeric", "logical")
+      sel <- match(type_of(x), types)
+      if (is.na(sel)) sel <- 1L
+
+      list(
+        gaction("Rename column", handler = function(h, ...) {
+          out <- ginput(gettext("New column name:"), text = nm,
+                        title = gettext("Rename column"), parent = host)
+          if (is.character(out) && nzchar(out)) {
+            nms <- host$get_names()
+            if (j >= 1L && j <= length(nms)) {
+              nms[j] <- out
+              host$set_names(nms)
+            }
+          }
+        }),
+        gseparator(),
+        gaction("Insert column...", handler = function(h, ...) {
+          nr <- max(0L, nrow(host$items))
+          host$insert_column(j, character(nr), "Replace me")
+        }),
+        gaction("Delete column", handler = function(h, ...) {
+          host$remove_column(j)
+        }),
+        gseparator(),
+        gradio(types, selected = sel, handler = function(h, ...) {
+          ind <- svalue(h$obj, index = TRUE)
+          if (isTRUE(ind > 1L))
+            host$coerce_column(j, get(sprintf("as.%s", types[ind]), mode = "function"))
+        }),
+        gseparator(),
+        gcheckbox("Editable", checked = host$is_editable(j),
+                  handler = function(h, ...) {
+                    host$set_editable(svalue(h$obj), j)
+                  })
+      )
+    },
+
+    add_popup_menu = function(menulist) {
+      f <- function(...) menulist
+      add_popup(f)
+    },
+
+    add_popup = function(menu_fun = NULL) {
+      if (is.null(menu_fun))
+        menu_fun <- .self$default_popup_menu
+      header_menu_fun <<- menu_fun
+      remove_popup_menu()
+      if (!length(column_objs))
+        return(invisible(NULL))
+      prefixes <- character(0)
+      groups <- list()
+      for (k in seq_along(column_objs)) {
+        prefix <- paste0("gdh", k)
+        built <- build_gmenu_model(menu_fun(k), action_prefix = prefix)
+        gtkColumnViewColumnSetHeaderMenu(column_objs[[k]], built$model)
+        gtkWidgetInsertActionGroup(widget, prefix, built$group)
+        prefixes <- c(prefixes, prefix)
+        groups[[k]] <- built$group
+      }
+      header_action_prefixes <<- prefixes
+      header_action_groups <<- groups
       invisible(NULL)
     },
 
@@ -306,10 +507,20 @@ GDf <- setRefClass(
     },
     get_editable = function(j, ...) is_editable(j, ...),
 
-    remove_popup_menu = function() invisible(NULL),
+    remove_popup_menu = function() {
+      for (col in column_objs)
+        try(gtkColumnViewColumnSetHeaderMenu(col, NULL), silent = TRUE)
+      for (prefix in header_action_prefixes)
+        try(gtkWidgetInsertActionGroup(widget, prefix, NULL), silent = TRUE)
+      header_action_prefixes <<- character(0)
+      header_action_groups <<- list()
+      invisible(NULL)
+    },
 
     ## Attach text DragSources to ColumnView header title widgets so
     ## dragging a header exports the column name (iNZight V1/V2 boxes).
+    ## Native SetHeaderMenu stays installed; after DnD strips GestureClick
+    ## we restore secondary-click menus via .dnd_attach_header_menu_click.
     wire_column_dnd = function() {
       .dnd_prepare_columnview_headers_for_dnd(widget)
       titles <- .dnd_columnview_header_titles(widget)
@@ -324,6 +535,22 @@ GDf <- setRefClass(
         local({
           nm <- as.character(nms[k])[1]
           .dnd_attach_text_source(titles[[k]], function() nm)
+        })
+      }
+      ## Restore header menus (secondary click) after GestureClick strip
+      n_menu <- min(n, length(column_objs), length(header_action_prefixes),
+                    length(header_action_groups))
+      for (k in seq_len(n_menu)) {
+        local({
+          kk <- k
+          model <- tryCatch(
+            gtkColumnViewColumnGetHeaderMenu(column_objs[[kk]]),
+            error = function(e) NULL
+          )
+          .dnd_attach_header_menu_click(
+            titles[[kk]], model, widget,
+            header_action_prefixes[kk], header_action_groups[[kk]]
+          )
         })
       }
       as.integer(n)
@@ -347,9 +574,11 @@ GDf <- setRefClass(
     },
 
     add_dnd_columns = function() {
-      ## Match RGtk2: clear header popups, then enable header name drags.
-      remove_popup_menu()
+      ## Keep / restore header menus so secondary-click works after DnD
+      ## strips ColumnViewTitle GestureClick.
       dnd_columns_wanted <<- TRUE
+      if (!length(header_action_groups) && length(column_objs))
+        add_popup(header_menu_fun)
       n <- wire_column_dnd()
       if (n < 1L && length(col_names))
         schedule_column_dnd_retry()

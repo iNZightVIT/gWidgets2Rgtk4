@@ -49,11 +49,13 @@ test_that("gdf set_editable and remove_popup_menu / add_dnd_columns", {
   st <- gdf_header_dnd_stats(gd)
   expect_equal(st$headers, 2L)
   expect_equal(st$drag_sources, 2L)
-  expect_equal(st$title_clicks, 0L)
+  ## Secondary-click GestureClick restored for header menus after DnD strip
+  expect_equal(st$title_clicks, 2L)
   expect_equal(st$header_drags, 0L)
   ## Re-entrant: does not stack sources
   gd$add_dnd_columns()
   expect_equal(gdf_header_dnd_stats(gd)$drag_sources, 2L)
+  expect_equal(gdf_header_dnd_stats(gd)$title_clicks, 2L)
   dispose(w)
 })
 
@@ -86,7 +88,7 @@ test_that("gdf column DnD rewires after set_frame", {
   st <- gdf_header_dnd_stats(gd)
   expect_equal(st$headers, 3L)
   expect_equal(st$drag_sources, 3L)
-  expect_equal(st$title_clicks, 0L)
+  expect_equal(st$title_clicks, 3L)
   expect_equal(names(gd), c("hp", "wt", "qsec"))
   dispose(w)
 })
@@ -115,5 +117,37 @@ test_that("gdf [ and [<- replace frame", {
   gd[] <- data.frame(p = 1:2, q = 3:4)
   expect_equal(gd[, "p"], 1:2)
   expect_equal(names(gd), c("p", "q"))
+  dispose(w)
+})
+
+test_that("gdf column mutate helpers", {
+  w <- gwindow("df-mut", visible = FALSE)
+  gd <- gdf(data.frame(mpg = 1:3, cyl = 4:6), container = w)
+  gd$insert_column(2L, letters[1:3], "letter")
+  expect_equal(names(gd), c("mpg", "letter", "cyl"))
+  gd$coerce_column(1L, as.character)
+  expect_true(is.character(gd$get_frame()$mpg))
+  gd$replace_column(2L, factor(c("x", "y", "x")))
+  expect_true(is.factor(gd$get_frame()$letter))
+  gd$remove_column(2L)
+  expect_equal(names(gd), c("mpg", "cyl"))
+  expect_false(gd$can_undo())
+  expect_silent(gd$undo())
+  dispose(w)
+})
+
+test_that("gdf header menus coexist with add_dnd_columns", {
+  w <- gwindow("df-hdr", visible = FALSE, width = 420, height = 280)
+  gd <- gdf(data.frame(a = 1:2, b = 3:4), container = w)
+  expect_equal(length(gd$header_action_prefixes), 2L)
+  expect_equal(length(gd$header_action_groups), 2L)
+  visible(w) <- TRUE
+  pump_gtk()
+  gd$add_dnd_columns()
+  ## Menus kept; DnD sources present; secondary clicks restored
+  expect_equal(length(gd$header_action_prefixes), 2L)
+  st <- gdf_header_dnd_stats(gd)
+  expect_equal(st$drag_sources, 2L)
+  expect_equal(st$title_clicks, 2L)
   dispose(w)
 })

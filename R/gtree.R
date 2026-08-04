@@ -252,8 +252,7 @@ GTree <- setRefClass(
     },
 
     make_key_column = function(title) {
-      env <- nodes
-      tmodel_ref <- .self
+      host <- .self
       factory <- gtkSignalListItemFactoryNew()
       gSignalConnectR(factory, "setup", function(f, list_item) {
         expander <- gtkTreeExpanderNew()
@@ -278,18 +277,15 @@ GTree <- setRefClass(
         label <- gtkWidgetGetNextSibling(icon)
         item <- gtkTreeListRowGetItem(row)
         id <- tryCatch(gtkStringObjectGetString(item), error = function(e) "")
-        node <- if (nzchar(id) && exists(id, envir = env, inherits = FALSE))
-          get(id, envir = env, inherits = FALSE)
-        else
-          NULL
+        node <- host$get_node(id)
         txt <- if (is.null(node)) id else node$key
         gtkLabelSetText(label, as.character(txt)[1])
         ## Optional icon
-        icol <- tmodel_ref$icon_col
+        icol <- host$icon_col
         if (!is.null(icol) && !is.null(node)) {
           stock <- as.character(node$row[[icol]])[1]
           iname <- tryCatch(
-            .getStockIconByName(tmodel_ref$toolkit, stock),
+            .getStockIconByName(host$toolkit, stock),
             error = function(e) stock
           )
           if (length(iname) && nzchar(iname[1])) {
@@ -302,7 +298,7 @@ GTree <- setRefClass(
           gtkWidgetSetVisible(icon, FALSE)
         }
         ## Tooltip
-        tcol <- tmodel_ref$tooltip_col
+        tcol <- host$tooltip_col
         if (!is.null(tcol) && !is.null(node)) {
           tip <- as.character(node$row[[tcol]])[1]
           if (length(tip) && !is.na(tip))
@@ -316,7 +312,7 @@ GTree <- setRefClass(
 
     make_data_column = function(col_idx, title) {
       force(col_idx)
-      env <- nodes
+      host <- .self
       factory <- gtkSignalListItemFactoryNew()
       gSignalConnectR(factory, "setup", function(f, list_item) {
         label <- gtkLabelNew("")
@@ -332,10 +328,7 @@ GTree <- setRefClass(
         }
         item <- gtkTreeListRowGetItem(row)
         id <- tryCatch(gtkStringObjectGetString(item), error = function(e) "")
-        node <- if (nzchar(id) && exists(id, envir = env, inherits = FALSE))
-          get(id, envir = env, inherits = FALSE)
-        else
-          NULL
+        node <- host$get_node(id)
         if (is.null(node)) {
           gtkLabelSetText(label, "")
           return()

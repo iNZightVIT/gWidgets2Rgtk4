@@ -99,3 +99,26 @@ test_that("add_popup_menu accepts menu list without warning", {
   expect_silent(b$add_3rd_mouse_popup_menu(list(act)))
   dispose(w)
 })
+
+test_that("gmenu accepts gradio and gcheckbox without skip warning", {
+  w <- gwindow("mb-radio", visible = FALSE)
+  hit <- NULL
+  type_r <- gradio(c("character", "factor", "numeric"), selected = 1L,
+                   handler = function(h, ...) hit <<- svalue(h$obj))
+  ed_cb <- gcheckbox("Editable", checked = TRUE)
+  expect_warning(
+    mb <- gmenu(list(Type = list(type_r, gseparator(horizontal = TRUE), ed_cb)),
+                container = w),
+    NA
+  )
+  expect_true(is(mb, "GMenuBar"))
+  type_r$set_index(3L)
+  expect_equal(svalue(type_r), "numeric")
+  expect_equal(hit, "numeric")
+  ## Menu model rebuilt so bullet tracks selection
+  items <- mb$menu_list$Type
+  expect_true(is(items[[1]], "GRadio"))
+  built <- build_gmenu_model(list(Type = list(type_r)), action_prefix = "tst")
+  expect_true(!is.null(built$model))
+  dispose(w)
+})

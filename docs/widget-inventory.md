@@ -63,14 +63,14 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
-| `gmenu` | `gmenu.R` | 156 | Very High | done | GMenuModel + PopoverMenuBar / PopoverMenu |
+| `gmenu` | `gmenu.R` | 156 | Very High | done | GMenuModel + PopoverMenuBar / PopoverMenu; radio→actions, checkbox→stateful |
 | `gtoolbar` | `gtoolbar.R` | — | Very High | done | GtkBox of buttons |
 | `gstatusbar` | `gstatusbar.R` | — | High | done | GtkStatusbar push/pop |
-| `ggraphics` | `ggraphics.R` | — | High | spike | unigd device + GtkPicture PNG blit; httpgd/WebView later |
-| `gtable` | `gtable.R` | — | High | done | ColumnView; header-menu follow-up (see plan) |
-| `gdf` | `gdf.R` | — | Very High | mvp | EditableLabel; set_frame/get_frame; header-menu later |
+| `ggraphics` | `ggraphics.R` | — | High | spike | unigd device + GtkPicture PNG blit; no further Cairo/httpgd work |
+| `gtable` | `gtable.R` | — | High | done | ColumnView; header menus via SetHeaderMenu |
+| `gdf` | `gdf.R` | — | Very High | done | EditableLabel; mutate helpers; header menus; undo stack deferred |
 | `gtree` | `gtree.R` | — | High | done | ColumnView + TreeListModel + TreeExpander |
-| `gvarbrowser` | `gvarbrowser.R` | — | High | mvp | WSWatcherModel; object drop source; rebuild on update |
+| `gvarbrowser` | `gvarbrowser.R` | — | High | done | Incremental category sync; preserve expand/select; set_value/get_index |
 | `gcalendar` | `gcalendar.R` | — | Medium | done | Entry + modal GtkCalendar; GDateTime |
 
 ## Cross-cutting (many files)

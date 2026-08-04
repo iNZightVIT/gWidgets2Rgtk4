@@ -12,12 +12,23 @@ NULL
     GMenuBar$new(toolkit, menu.list = menu.list, container = container, ...)
 }
 
+.gmenu_env <- new.env(parent = emptyenv())
+
 ##' @noRd
 build_gmenu_model <- function(items, action_prefix = "gwa") {
   model <- gMenuNew()
   group <- gSimpleActionGroupNew()
   append_menu_items(model, group, items, action_prefix)
   list(model = model, group = group)
+}
+
+##' Next unique stateful action name within a group builder pass
+##' @noRd
+.next_menu_state_name <- function(prefix = "st") {
+  i <- get0(".menu_state_i", envir = .gmenu_env, ifnotfound = 0L)
+  i <- as.integer(i) + 1L
+  assign(".menu_state_i", i, envir = .gmenu_env)
+  paste0(prefix, i)
 }
 
 append_menu_items <- function(menu, group, items, action_prefix = "gwa") {
@@ -44,9 +55,12 @@ append_menu_items <- function(menu, group, items, action_prefix = "gwa") {
       label <- if (!is.null(nm)) nm else "Menu"
       gMenuAppendSubmenu(section, label, sub)
       has_items <- TRUE
-    } else if (is(item, "GRadio") || is(item, "GCheckbox")) {
-      warning("Radio/checkbox menu items not fully supported in GTK4 gmenu; skipped",
-              call. = FALSE)
+    } else if (is(item, "GRadio")) {
+      add_gradio_to_menu(section, group, item, action_prefix)
+      has_items <- TRUE
+    } else if (is(item, "GCheckbox")) {
+      add_gcheckbox_to_menu(section, group, item, action_prefix)
+      has_items <- TRUE
     } else if (is(item, "GComponent")) {
       warning("Arbitrary widget menu items not supported in GTK4 gmenu; skipped",
               call. = FALSE)
@@ -81,6 +95,62 @@ add_gaction_to_menu <- function(menu, group, item, action_prefix = "gwa") {
   invisible(NULL)
 }
 
+##' Map GRadio to one Gio action per option (Rgtk4 lacks usable GVariantType
+##' for stateful string radio actions). Handlers still sync via set_index.
+##' Menu labels get a bullet on the current selection; GMenuBar rebuilds on
+##' change so the marker moves when the menu is reopened.
+##' @noRd
+add_gradio_to_menu <- function(menu, group, item, action_prefix = "gwa") {
+  labels <- as.character(item$get_items())
+  if (!length(labels))
+    return(invisible(NULL))
+  idx <- as.integer(item$get_index())[1]
+  if (is.na(idx) || idx < 1L || idx > length(labels))
+    idx <- 1L
+  for (i in seq_along(labels)) {
+    name <- .next_menu_state_name("radio")
+    lab <- labels[i]
+    ## Mark the currently selected option (no Gio radio attribute without VariantType)
+    if (identical(as.integer(i), as.integer(idx)))
+      lab <- paste0("\u2022 ", lab)
+    sa <- gSimpleActionNew(name, NULL)
+    local({
+      radio <- item
+      ii <- i
+      gSignalConnectR(sa, "activate", function(a, param) {
+        radio$set_index(ii)
+      })
+    })
+    gActionMapAddAction(group, sa)
+    gMenuAppend(menu, lab, paste0(action_prefix, ".", name))
+  }
+  invisible(NULL)
+}
+
+##' Map GCheckbox to a stateful Gio boolean action
+##' @noRd
+add_gcheckbox_to_menu <- function(menu, group, item, action_prefix = "gwa") {
+  name <- .next_menu_state_name("check")
+  checked <- isTRUE(as.logical(item$get_value())[1])
+  sa <- gSimpleActionNewStateful(name, NULL, gVariantNewBoolean(checked))
+  local({
+    cb <- item
+    gSignalConnectR(sa, "activate", function(a, param) {
+      cur <- tryCatch(gVariantGetBoolean(gActionGetState(a)),
+                      error = function(e) FALSE)
+      new_val <- !isTRUE(as.logical(cur)[1])
+      gSimpleActionSetState(a, gVariantNewBoolean(new_val))
+      cb$set_value(new_val)
+    })
+  })
+  gActionMapAddAction(group, sa)
+  label <- as.character(item$get_items())[1]
+  if (!nzchar(label))
+    label <- "Toggle"
+  gMenuAppend(menu, label, paste0(action_prefix, ".", name))
+  invisible(NULL)
+}
+
 ## Toplevel menu bar (GtkPopoverMenuBar + GMenuModel)
 GMenuBar <- setRefClass(
   "GMenuBar",
@@ -89,7 +159,8 @@ GMenuBar <- setRefClass(
     menu_list = "list",
     menu_model = "ANY",
     action_group = "ANY",
-    action_prefix = "character"
+    action_prefix = "character",
+    rebuilding = "logical"
   ),
   methods = list(
     initialize = function(toolkit = NULL, menu.list = list(), container = NULL, ...) {
@@ -98,14 +169,47 @@ GMenuBar <- setRefClass(
           menu_list = list(),
           action_prefix = "gwa",
           menu_model = NULL,
-          action_group = NULL
+          action_group = NULL,
+          rebuilding = FALSE
         )
         rebuild_menubar(menu.list)
         add_to_parent(container, .self, ...)
       }
       callSuper(toolkit)
     },
+    ## Radio menu bullets are static labels; rebuild when GRadio changes
+    ## so the marker tracks the current selection on next open.
+    wire_radio_rebuild = function(items) {
+      host <- .self
+      walk <- function(x) {
+        if (!length(x))
+          return()
+        for (item in x) {
+          if (is(item, "GRadio")) {
+            already <- tryCatch(
+              exists("menu_rebuild_wired", envir = item$.e, inherits = FALSE) &&
+                isTRUE(item$.e$menu_rebuild_wired),
+              error = function(e) FALSE
+            )
+            if (!already) {
+              tryCatch(item$.e$menu_rebuild_wired <- TRUE, error = function(e) NULL)
+              o <- gWidgets2:::observer(item, function(h, ...) {
+                if (!isTRUE(host$rebuilding))
+                  host$rebuild_menubar()
+              }, NULL)
+              item$add_observer(o, item$change_signal)
+            }
+          } else if (is.list(item) && !is(item, "GComponent")) {
+            walk(item)
+          }
+        }
+      }
+      walk(items)
+      invisible(NULL)
+    },
     rebuild_menubar = function(items = menu_list) {
+      rebuilding <<- TRUE
+      on.exit(rebuilding <<- FALSE)
       built <- build_gmenu_model(items, action_prefix)
       menu_model <<- built$model
       action_group <<- built$group
@@ -118,6 +222,7 @@ GMenuBar <- setRefClass(
         gtkPopoverMenuBarSetMenuModel(widget, menu_model)
       }
       gtkWidgetInsertActionGroup(widget, action_prefix, action_group)
+      wire_radio_rebuild(items)
       invisible(NULL)
     },
     add_menu_items = function(sub_menu, items) {
@@ -157,18 +262,18 @@ GMenuPopup <- setRefClass(
         menu_list = list(),
         action_prefix = "gwa",
         menu_model = NULL,
-        action_group = NULL
+        action_group = NULL,
+        rebuilding = FALSE
       )
-      built <- build_gmenu_model(menu.list, action_prefix)
-      menu_model <<- built$model
-      action_group <<- built$group
-      menu_list <<- menu.list
+      rebuild_menubar(menu.list)
       widget <<- gtkPopoverMenuNewFromModel(menu_model)
       block <<- widget
       try(gtkPopoverSetHasArrow(widget, FALSE), silent = TRUE)
       callSuper(toolkit)
     },
     rebuild_menubar = function(items = menu_list) {
+      rebuilding <<- TRUE
+      on.exit(rebuilding <<- FALSE)
       built <- build_gmenu_model(items, action_prefix)
       menu_model <<- built$model
       action_group <<- built$group
@@ -181,6 +286,7 @@ GMenuPopup <- setRefClass(
         if (!is.null(parent_w))
           gtkWidgetInsertActionGroup(parent_w, action_prefix, action_group)
       }
+      wire_radio_rebuild(items)
       invisible(NULL)
     },
     attach_to = function(parent_widget) {
@@ -195,6 +301,8 @@ GMenuPopup <- setRefClass(
       invisible(NULL)
     },
     popup_at = function(parent_widget, x = 0L, y = 0L) {
+      ## Refresh radio bullets before show
+      rebuild_menubar(menu_list)
       attach_to(parent_widget)
       ## Position roughly under the click using offset relative to parent size
       tryCatch({
