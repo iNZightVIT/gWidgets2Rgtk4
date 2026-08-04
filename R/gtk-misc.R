@@ -188,6 +188,82 @@ stock_to_icon_name <- function(name) {
 }
 
 ## ---------------------------------------------------------------------------
+## Keystroke helpers (GtkEventControllerKey)
+## ---------------------------------------------------------------------------
+
+## GDK modifier bits (subset used by gWidgets handlers)
+.GdkModifier <- list(
+  SHIFT = 1L,
+  LOCK = 2L,
+  CONTROL = 4L,
+  ALT = 8L,
+  BUTTON1 = 256L,
+  BUTTON2 = 512L,
+  BUTTON3 = 1024L,
+  SUPER = 67108864L,
+  HYPER = 134217728L,
+  META = 268435456L
+)
+
+.keyval_to_string <- function(keyval) {
+  keyval <- as.integer(keyval)[1]
+  if (is.na(keyval))
+    return("")
+  uni <- tryCatch(as.integer(gdkKeyvalToUnicode(keyval))[1], error = function(e) 0L)
+  if (!is.na(uni) && uni > 0L)
+    return(intToUtf8(uni))
+  nm <- tryCatch(as.character(gdkKeyvalName(keyval))[1], error = function(e) "")
+  if (is.null(nm) || is.na(nm)) "" else nm
+}
+
+.gdk_state_to_modifier <- function(state) {
+  state <- as.integer(state)[1]
+  if (is.na(state) || state == 0L)
+    return(NULL)
+  mods <- character()
+  if (bitwAnd(state, .GdkModifier$SHIFT) != 0L) mods <- c(mods, "shift")
+  if (bitwAnd(state, .GdkModifier$CONTROL) != 0L) mods <- c(mods, "control")
+  if (bitwAnd(state, .GdkModifier$ALT) != 0L) mods <- c(mods, "mod1")
+  if (bitwAnd(state, .GdkModifier$SUPER) != 0L ||
+      bitwAnd(state, .GdkModifier$META) != 0L) mods <- c(mods, "super")
+  if (!length(mods)) NULL else mods
+}
+
+## Best-effort widget size: allocation → size-request → (-1,-1)
+.widget_get_size <- function(w) {
+  if (is.null(w) || is(w, "uninitializedField"))
+    return(c(width = -1L, height = -1L))
+  aw <- tryCatch(as.integer(gtkWidgetGetAllocatedWidth(w))[1], error = function(e) NA_integer_)
+  ah <- tryCatch(as.integer(gtkWidgetGetAllocatedHeight(w))[1], error = function(e) NA_integer_)
+  if (!is.na(aw) && !is.na(ah) && aw > 0L && ah > 0L)
+    return(c(width = aw, height = ah))
+  ww <- tryCatch(as.integer(gtkWidgetGetWidth(w))[1], error = function(e) NA_integer_)
+  wh <- tryCatch(as.integer(gtkWidgetGetHeight(w))[1], error = function(e) NA_integer_)
+  if (!is.na(ww) && !is.na(wh) && ww > 0L && wh > 0L)
+    return(c(width = ww, height = wh))
+  req <- tryCatch(gtkWidgetGetSizeRequest(w), error = function(e) NULL)
+  if (!is.null(req)) {
+    rw <- as.integer(req$width)[1]
+    rh <- as.integer(req$height)[1]
+    if (!is.na(rw) && !is.na(rh) && (rw > 0L || rh > 0L))
+      return(c(width = max(rw, -1L), height = max(rh, -1L)))
+  }
+  c(width = -1L, height = -1L)
+}
+
+##' Set a pointer (hand) cursor on a component (hover polish).
+##' @param obj A gWidgets GComponent.
+##' @param name GDK cursor name (default \code{"pointer"}).
+##' @export
+setPointerCursor <- function(obj, name = "pointer") {
+  w <- if (is(obj, "GComponent")) obj$style_widget() else getWidget(obj)
+  if (!is.null(w))
+    tryCatch(gtkWidgetSetCursorFromName(w, as.character(name)[1]),
+             error = function(e) invisible(NULL))
+  invisible(NULL)
+}
+
+## ---------------------------------------------------------------------------
 ## Container CSS box model (padding / margin / border)
 ## ---------------------------------------------------------------------------
 

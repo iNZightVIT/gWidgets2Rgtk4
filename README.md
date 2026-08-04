@@ -15,7 +15,7 @@ gbutton("OK", container = w)
 
 ## Status
 
-Core path and extended widgets are implemented: containers, controls, dialogs, files, chrome (`gmenu` / `gtoolbar` / `gstatusbar`), tables/`gdf`, trees/`gvarbrowser`, calendar, DnD, fonts/CSS. `ggraphics` is a unigd + `GtkPicture` spike (no locator). See [docs/widget-inventory.md](docs/widget-inventory.md) for the full checklist and known stubs.
+Core path and extended widgets are implemented: containers, controls, dialogs, files, chrome (`gmenu` / `gtoolbar` / `gstatusbar`), tables/`gdf`, trees/`gvarbrowser`, calendar, DnD, fonts/CSS. Phase 0 helpers: real `size()`, window position/center API, keystroke handlers, `gtext` margins/`scroll_to`, file-path button icons. `ggraphics` is a unigd + `GtkPicture` spike (no locator). See [docs/widget-inventory.md](docs/widget-inventory.md) for the full checklist and known stubs.
 
 ## Documentation
 

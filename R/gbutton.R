@@ -67,6 +67,23 @@ GButton <- setRefClass(
     },
     set_icon = function(value) {
       value <- as.character(value)[1]
+      if (is.na(value) || !nzchar(value))
+        return(invisible(NULL))
+      ## File path → GtkImage child (optionally keep label beside it)
+      if (file.exists(value)) {
+        img <- gtkImageNewFromFile(value)
+        lab <- tryCatch(gtkButtonGetLabel(widget), error = function(e) NULL)
+        lab <- if (is.null(lab)) "" else as.character(lab)[1]
+        if (nzchar(lab)) {
+          box <- gtkBoxNew(.GtkOrientation$HORIZONTAL, 4L)
+          gtkBoxAppend(box, img)
+          gtkBoxAppend(box, gtkLabelNew(lab))
+          gtkButtonSetChild(widget, box)
+        } else {
+          gtkButtonSetChild(widget, img)
+        }
+        return(invisible(NULL))
+      }
       ## Only treat known stock ids as icons; plain labels stay labels
       nms <- names(.stock_to_icon_name)
       bare <- sub("^(gtk|gw)-", "", value)

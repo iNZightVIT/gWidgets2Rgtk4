@@ -123,8 +123,7 @@ GComponent <- setRefClass(
       !inherits(try(gtkWidgetGetVisible(block), silent = TRUE), "try-error")
     },
     get_size = function(...) {
-      ## Allocation may be 0 before realize; size-request is a fallback
-      c(width = -1L, height = -1L)
+      .widget_get_size(getBlock(.self))
     },
     set_size = function(value, ...) {
       if (is.list(value))
@@ -363,8 +362,33 @@ GComponentObservable <- setRefClass(
       add_handler("clicked", handler, action, ...)
     },
     add_handler_keystroke = function(handler, action = NULL, ...) {
-      ## GTK4: key events need event controllers; stub for Phase 1
-      warning("addHandlerKeystroke not fully implemented for GTK4", call. = FALSE)
+      ## GTK4: key-release via GtkEventControllerKey (parity with RGtk2 key-release-event)
+      if (!is_handler(handler))
+        return(invisible(NULL))
+      signal <- "keystroke"
+      o <- gWidgets2:::observer(.self, handler, action)
+      if (is.null(connected_signals[[signal, exact = TRUE]])) {
+        w <- handler_widget()
+        tryCatch(gtkWidgetSetFocusable(w, TRUE), error = function(e) invisible(NULL))
+        ctrl <- gtkEventControllerKeyNew()
+        ## BUBBLE so focused child (e.g. TextView) still delivers after handling
+        tryCatch(gtkEventControllerSetPropagationPhase(ctrl, 2L), error = function(e) invisible(NULL))
+        gtkWidgetAddController(w, ctrl)
+        gSignalConnectR(ctrl, "key-released", function(controller, keyval, keycode, state) {
+          key <- .keyval_to_string(keyval)
+          modifier <- .gdk_state_to_modifier(state)
+          .self$notify_observers(
+            signal = signal,
+            key = key,
+            modifier = modifier,
+            state = as.integer(state)[1]
+          )
+          FALSE
+        })
+        connected_signals[[signal]] <<- TRUE
+        set_attr(".key_controller", ctrl)
+      }
+      invisible(add_observer(o, signal))
     },
     add_handler_button_press = function(handler, action = NULL, ...) {
       warning("addHandlerButtonPress not fully implemented for GTK4", call. = FALSE)

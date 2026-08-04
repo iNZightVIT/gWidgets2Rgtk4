@@ -20,7 +20,8 @@ GWindow <- setRefClass(
     toolbar_area = "ANY",
     content_area = "ANY",
     statusbar_area = "ANY",
-    statusbar_widget = "ANY"
+    statusbar_widget = "ANY",
+    .window_pos = "ANY"
   ),
   methods = list(
     initialize = function(toolkit = NULL, title = "", visible = TRUE, name = NULL,
@@ -42,7 +43,7 @@ GWindow <- setRefClass(
             gtkWindowSetModal(widget, TRUE)
           }
         } else if (is.numeric(parent) && length(parent) >= 2) {
-          ## position not always available; ignore quietly
+          set_position(as.integer(parent[1]), as.integer(parent[2]))
         }
       }
 
@@ -52,7 +53,8 @@ GWindow <- setRefClass(
         menubar_area = gtkBoxNew(.GtkOrientation$HORIZONTAL, 0L),
         toolbar_area = gtkBoxNew(.GtkOrientation$HORIZONTAL, 0L),
         content_area = gtkBoxNew(.GtkOrientation$HORIZONTAL, 0L),
-        statusbar_area = gtkBoxNew(.GtkOrientation$HORIZONTAL, 0L)
+        statusbar_area = gtkBoxNew(.GtkOrientation$HORIZONTAL, 0L),
+        .window_pos = c(x = -1L, y = -1L)
       )
       gtkWidgetSetHexpand(content_area, TRUE)
       gtkWidgetSetVexpand(content_area, TRUE)
@@ -81,7 +83,61 @@ GWindow <- setRefClass(
       if (isTRUE(value))
         gtkWindowPresent(widget)
     },
-    get_size = function() c(width = -1L, height = -1L),
+    get_size = function() {
+      sz <- .widget_get_size(widget)
+      if (sz[["width"]] > 0L && sz[["height"]] > 0L)
+        return(sz)
+      ds <- tryCatch(gtkWindowGetDefaultSize(widget), error = function(e) NULL)
+      if (!is.null(ds)) {
+        dw <- as.integer(ds$width)[1]
+        dh <- as.integer(ds$height)[1]
+        if (!is.na(dw) && !is.na(dh) && dw > 0L && dh > 0L)
+          return(c(width = dw, height = dh))
+      }
+      sz
+    },
+    ## GTK4: apps cannot reliably move toplevels (esp. Wayland). Track requested
+    ## coords for API parity; present() is the portable action.
+    get_position = function() {
+      if (is(.window_pos, "uninitializedField") || is.null(.window_pos))
+        c(x = -1L, y = -1L)
+      else
+        as.integer(.window_pos)
+    },
+    set_position = function(x, y = NULL) {
+      if (length(x) >= 2L && (missing(y) || is.null(y))) {
+        y <- x[2]
+        x <- x[1]
+      }
+      .window_pos <<- c(x = as.integer(x)[1], y = as.integer(y)[1])
+      invisible(.window_pos)
+    },
+    center = function() {
+      ## Best-effort: present window. True pixel centering needs compositor
+      ## support and readable GdkRectangle fields (opaque in Rgtk4 today).
+      sz <- get_size()
+      mon <- tryCatch({
+        display <- gdkDisplayGetDefault()
+        mons <- gdkDisplayGetMonitors(display)
+        n <- as.integer(gListModelGetNItems(mons))[1]
+        if (!is.na(n) && n > 0L) gListModelGetObject(mons, 0L) else NULL
+      }, error = function(e) NULL)
+      if (!is.null(mon) && sz[["width"]] > 0L && sz[["height"]] > 0L) {
+        ## Approximate from physical mm when pixel geometry is unavailable
+        w_mm <- tryCatch(as.integer(gdkMonitorGetWidthMm(mon))[1], error = function(e) NA_integer_)
+        h_mm <- tryCatch(as.integer(gdkMonitorGetHeightMm(mon))[1], error = function(e) NA_integer_)
+        scale <- tryCatch(as.integer(gdkMonitorGetScaleFactor(mon))[1], error = function(e) 1L)
+        if (!is.na(w_mm) && !is.na(h_mm) && w_mm > 0L && h_mm > 0L) {
+          ## ~96 DPI → px ≈ mm * 96 / 25.4
+          mw <- as.integer(w_mm * 96 / 25.4 * max(scale, 1L))
+          mh <- as.integer(h_mm * 96 / 25.4 * max(scale, 1L))
+          set_position(as.integer((mw - sz[["width"]]) / 2),
+                       as.integer((mh - sz[["height"]]) / 2))
+        }
+      }
+      gtkWindowPresent(widget)
+      invisible(NULL)
+    },
     update_widget = function(...) invisible(NULL),
     is_extant = function() {
       !inherits(try(gtkWindowGetTitle(widget), silent = TRUE), "try-error")

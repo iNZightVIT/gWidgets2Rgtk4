@@ -94,10 +94,20 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 
 | API | Status |
 |-----|--------|
-| `addHandlerKeystroke` | stub — warns, does nothing |
-| `GComponent$get_size` | stub — always `-1,-1` |
 | gdf undo stack | deferred (`can_undo` / `undo` stubs) |
 | `ggraphics` locator / rubber-band | not supported |
+| Window `set_position` / `center` pixel move | API present; compositor (esp. Wayland) may ignore absolute placement |
+
+## Phase 0 helpers (done)
+
+| Helper | Notes |
+|--------|-------|
+| `GComponent$get_size` | allocation → size-request → `(-1,-1)` |
+| `GWindow$get_size` / `get_position` / `set_position` / `center` | default size fallback; position tracked; `center` presents + approx coords |
+| `addHandlerKeystroke` | `GtkEventControllerKey` `key-released` |
+| `gtext` margins + `scroll_to` | `set_left_margin` / `set_right_margin` / `scroll_to("start"|"end")` |
+| `gbutton$set_icon(file)` | `gtkImageNewFromFile` + `gtkButtonSetChild` |
+| `setPointerCursor()` | `gtkWidgetSetCursorFromName(..., "pointer")` |
 
 ## Not in this package
 

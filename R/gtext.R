@@ -220,6 +220,33 @@ GText <- setRefClass(
         return()
       callSuper(signal, decorator, emitter)
     },
+    get_left_margin = function(...) {
+      as.integer(gtkTextViewGetLeftMargin(widget))[1]
+    },
+    set_left_margin = function(value, ...) {
+      gtkTextViewSetLeftMargin(widget, as.integer(value)[1])
+      invisible(NULL)
+    },
+    get_right_margin = function(...) {
+      as.integer(gtkTextViewGetRightMargin(widget))[1]
+    },
+    set_right_margin = function(value, ...) {
+      gtkTextViewSetRightMargin(widget, as.integer(value)[1])
+      invisible(NULL)
+    },
+    scroll_to = function(where = c("start", "end"), ...) {
+      where <- match.arg(where)
+      iter <- if (identical(where, "start"))
+        gtkTextBufferGetStartIter(buffer)
+      else
+        gtkTextBufferGetEndIter(buffer)
+      yalign <- if (identical(where, "start")) 0 else 1
+      tryCatch(
+        gtkTextViewScrollToIter(widget, iter, 0, TRUE, 0, yalign),
+        error = function(e) invisible(NULL)
+      )
+      invisible(NULL)
+    },
     style_widget = function() widget
   )
 )

@@ -71,7 +71,11 @@ Prefer Rgtk4 helpers where present:
 | GTK2 | GTK4 |
 |------|------|
 | `button-press-event` / GdkEvent | `GtkGestureClick` and related controllers |
+| `key-release-event` | `GtkEventControllerKey` (`key-released`) via `addHandlerKeystroke` |
 | `gtkDragSourceSet` / targets | `GtkDragSource` + `GtkDropTargetAsync` via `dnd.R` |
+| `gtk_window_move` / `gdk_screen_*` | `GWindow$set_position` / `center` track requested coords; absolute moves are compositor-owned (often no-op on Wayland) |
+| `gtkTextViewSetLeftMargin` etc. | `gtext$set_left_margin` / `set_right_margin` / `scroll_to` |
+| `gtkButton$setImage(file)` | `gbutton$set_icon(path)` → `gtkImageNewFromFile` + `gtkButtonSetChild` |
 
 DnD details:
 

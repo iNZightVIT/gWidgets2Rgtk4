@@ -23,7 +23,11 @@ test_that("GComponent enabled/visible/tooltip/size/tag/invalid", {
   size(b) <- list(width = 100, height = 30)
   size(b) <- c(height = 25)
   size(b) <- 80
-  expect_equal(unname(size(b)), c(-1L, -1L))
+  ## size request is readable; allocation may still be unset when invisible
+  sz <- unname(size(b))
+  expect_true(is.numeric(sz) && length(sz) == 2L)
+  expect_true(sz[1] > 0 || sz[1] == -1L)
+  expect_true(sz[2] > 0 || sz[2] == -1L)
 
   tag(b, "k") <- 1
   expect_equal(tag(b, "k"), 1)
@@ -62,10 +66,60 @@ test_that("handler block/unblock/remove and stubs warn", {
   expect_silent(b$add_drop_source(function(h) "x"))
   expect_silent(b$add_drop_target(function(h) NULL))
   expect_silent(b$add_drag_motion(function(h) NULL))
-  expect_warning(b$add_handler_keystroke(function(h) NULL), "not fully implemented")
+  expect_silent(b$add_handler_keystroke(function(h) NULL))
   expect_silent(b$add_popup_menu(list()))
 
   b$remove_handlers()
+  dispose(w)
+})
+
+test_that("gwindow size/position/center helpers", {
+  w <- gwindow("geo", visible = FALSE, width = 320, height = 240)
+  sz <- size(w)
+  expect_equal(unname(sz), c(320L, 240L))
+  w$set_position(10L, 20L)
+  expect_equal(unname(w$get_position()), c(10L, 20L))
+  expect_silent(w$center())
+  dispose(w)
+})
+
+test_that("gtext margins and scroll_to", {
+  w <- gwindow("txt", visible = FALSE)
+  t <- gtext("hello\nworld", container = w)
+  t$set_left_margin(0L)
+  t$set_right_margin(0L)
+  expect_equal(t$get_left_margin(), 0L)
+  expect_equal(t$get_right_margin(), 0L)
+  expect_silent(t$scroll_to("start"))
+  expect_silent(t$scroll_to("end"))
+  dispose(w)
+})
+
+test_that("gbutton set_icon from file path", {
+  w <- gwindow("btn-img", visible = FALSE)
+  b <- gbutton("", container = w)
+  tmp <- tempfile(fileext = ".png")
+  ## minimal 1x1 PNG
+  writeBin(
+    as.raw(c(
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xde, 0x00, 0x00, 0x00,
+      0x0c, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xf8, 0xcf, 0xc0, 0x00,
+      0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x05, 0xfe, 0xd4, 0xef, 0x00, 0x00,
+      0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+    )),
+    tmp
+  )
+  expect_silent(b$set_icon(tmp))
+  unlink(tmp)
+  dispose(w)
+})
+
+test_that("setPointerCursor applies css", {
+  w <- gwindow("cur", visible = FALSE)
+  b <- gbutton("x", container = w)
+  expect_silent(setPointerCursor(b))
   dispose(w)
 })
 
