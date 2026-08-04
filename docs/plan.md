@@ -48,7 +48,9 @@ Order after scaffold is validated against a minimal iNZight-shaped script:
 2. `ggraphics` (unigd + GtkPicture blit; no cairoDevice) — spike ✅
 3. `gtable`, then `gdf` ✅
 4. `gtree`, `gvarbrowser` ✅
-5. Remainder: `gcalendar` ✅, DnD ✅ (incl. gdf column headers), fonts ✅, edge packing
+5. Remainder: `gcalendar` ✅, DnD ✅ (incl. gdf column headers), fonts ✅, edge packing ✅
+
+**Packing notes:** `expand`/`fill`/`anchor` map via `set_child_expand_fill_anchor()` onto hexpand/vexpand/halign/valign. Anchors are raw gWidgets `[-1,1]^2` (nine edge/corner/center spots); callers must not pre-convert to `[0,1]`. Box containers accept constructor `padding`/`margin`/`border` (CSS box model: padding+border via CSS on the inner box; margin via GTK margins on the outer block). Prefer `set_padding` / `set_margin` / `set_border`; `set_borderwidth` is a deprecated warning alias for `set_padding`.
 
 **Font notes:** Widget `font<-` maps the portable gWidgets2 spec to CSS (`GtkCssProvider` + unique class; `.class, .class label` so compounds style label text). Toolkit extras: `css<-`, `addCssClass` / `removeCssClass`, `loadCss`, and `options("gWidgets2Rgtk4.font.*")` / `options("gWidgets2Rgtk4.css")`. `gtext` uses `GtkTextTag` for `font.attr` / selection / insert (insert then `ApplyTagByName`).
 

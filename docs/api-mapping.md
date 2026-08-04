@@ -25,7 +25,7 @@ Function *names* are often similar (camelCase, RGtk2 style). Call *style* and GT
 | `gtkTable` | `gtkGridNew` + `gtkGridAttach` |
 | `gtkEventBox` | usually omit; gestures/controllers if needed |
 
-gWidgets2 packing args (`expand`, `fill`, `anchor`) must be mapped onto GTK4 hexpand/vexpand/halign/valign (and box/grid specifics) in helpers — semantics may be approximate where GTK4 has no 1:1.
+gWidgets2 packing args (`expand`, `fill`, `anchor`) map onto GTK4 hexpand/vexpand/halign/valign in `set_child_expand_fill_anchor()`. Pass raw gWidgets anchors in `[-1,1]^2` (do not pre-convert to `[0,1]`). Semantics may still be approximate where GTK4 has no 1:1 with GTK2 `packStart` fill.
 
 ## Icons
 

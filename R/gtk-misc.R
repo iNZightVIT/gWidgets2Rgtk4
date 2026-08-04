@@ -186,3 +186,100 @@ stock_to_icon_name <- function(name) {
   ## already looks like an icon theme name
   name
 }
+
+## ---------------------------------------------------------------------------
+## Container CSS box model (padding / margin / border)
+## ---------------------------------------------------------------------------
+
+.box_css_env <- new.env(parent = emptyenv())
+.box_css_env$id <- 0L
+
+## Normalize to CSS order: top, right, bottom, left.
+normalize_css_sides <- function(value, default = 0L) {
+  if (is.null(value))
+    return(rep(as.integer(default)[1], 4L))
+  v <- as.integer(value)
+  if (anyNA(v))
+    v[is.na(v)] <- as.integer(default)[1]
+  if (length(v) == 1L)
+    return(rep(v[1], 4L))
+  if (length(v) == 2L)
+    return(c(v[1], v[2], v[1], v[2]))
+  if (length(v) >= 4L)
+    return(v[1:4])
+  stop("padding/margin must be length 1, 2, or 4", call. = FALSE)
+}
+
+## Apply GTK margins; value is CSS-order sides (top, right, bottom, left).
+set_widget_margins <- function(w, value) {
+  if (is.null(w) || is(w, "uninitializedField"))
+    return(invisible(NULL))
+  sides <- normalize_css_sides(value, 0L)
+  gtkWidgetSetMarginTop(w, sides[1])
+  gtkWidgetSetMarginEnd(w, sides[2])
+  gtkWidgetSetMarginBottom(w, sides[3])
+  gtkWidgetSetMarginStart(w, sides[4])
+  invisible(NULL)
+}
+
+.box_model_css_decls <- function(padding, border) {
+  decls <- character()
+  pad <- normalize_css_sides(padding, 0L)
+  if (any(pad > 0L))
+    decls <- c(decls, sprintf("padding: %dpx %dpx %dpx %dpx",
+                              pad[1], pad[2], pad[3], pad[4]))
+  b <- as.integer(border)[1]
+  if (!is.na(b) && b > 0L)
+    decls <- c(decls, sprintf("border: %dpx solid", b))
+  if (!length(decls))
+    return("")
+  paste0(paste(decls, collapse = "; "), ";")
+}
+
+.next_box_css_class <- function() {
+  .box_css_env$id <- as.integer(.box_css_env$id + 1L)
+  sprintf("gw-box-%d", .box_css_env$id)
+}
+
+## Padding/border CSS on inner widget; margins on outer block.
+apply_box_model <- function(comp) {
+  pad <- tryCatch(comp$.box_padding, error = function(e) 0L)
+  mar <- tryCatch(comp$.box_margin, error = function(e) 0L)
+  bor <- tryCatch(comp$.box_border, error = function(e) 0L)
+  if (is.null(pad) || (length(pad) == 1L && is.na(pad)))
+    pad <- 0L
+  if (is.null(mar) || (length(mar) == 1L && is.na(mar)))
+    mar <- 0L
+  if (is.null(bor) || length(bor) < 1L || is.na(bor[1]))
+    bor <- 0L
+
+  blk <- tryCatch(getBlock(comp), error = function(e) NULL)
+  set_widget_margins(blk, mar)
+
+  w <- tryCatch({
+    if (is.null(comp$widget) || is(comp$widget, "uninitializedField"))
+      NULL
+    else
+      getWidget(comp$widget)
+  }, error = function(e) NULL)
+  if (is.null(w))
+    return(invisible(NULL))
+
+  cls <- tryCatch(comp$.box_css_class, error = function(e) NULL)
+  needs <- is.null(cls) || length(cls) == 0L || is.na(cls[1]) || !nzchar(cls[1])
+  if (needs) {
+    comp$.box_css_class <- .next_box_css_class()
+    comp$.box_css_provider <- gtkCssProviderNew()
+    gtkWidgetAddCssClass(w, comp$.box_css_class)
+    ctx <- gtkWidgetGetStyleContext(w)
+    gtkStyleContextAddProvider(ctx, comp$.box_css_provider, 800L)
+  }
+
+  decls <- .box_model_css_decls(pad, bor)
+  rule <- if (nzchar(decls))
+    sprintf(".%s { %s }", comp$.box_css_class, decls)
+  else
+    sprintf(".%s { }", comp$.box_css_class)
+  gtkCssProviderLoadFromData(comp$.box_css_provider, rule, -1L)
+  invisible(NULL)
+}

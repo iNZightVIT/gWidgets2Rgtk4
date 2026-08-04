@@ -81,12 +81,84 @@ test_that("ggroup packing helpers, spring, space, spacing", {
   expect_equal(svalue(g), 8)
   g$add_spring()
   g$add_space(10)
-  g$set_borderwidth(3)
+  expect_warning(g$set_borderwidth(3), "deprecated")
+  expect_equal(g$get_padding(), 3)
   g$set_size(c(200, 100))
   ## remove child
   g$remove_child(b3)
   expect_equal(length(g), 2)
   expect_true(is(g[1], "GButton"))
+  dispose(w)
+})
+
+test_that("ggroup nine-spot anchors map to GTK START/CENTER/END", {
+  ## gWidgets anchor in [-1,1]^2: x -1 left +1 right; y +1 top -1 bottom
+  ## GTK Align: FILL=0 START=1 END=2 CENTER=3
+  cases <- list(
+    list(a = c(-1, 1), h = 1L, v = 1L),   # NW
+    list(a = c(0, 1), h = 3L, v = 1L),    # N
+    list(a = c(1, 1), h = 2L, v = 1L),    # NE
+    list(a = c(-1, 0), h = 1L, v = 3L),   # W
+    list(a = c(0, 0), h = 3L, v = 3L),    # center
+    list(a = c(1, 0), h = 2L, v = 3L),    # E
+    list(a = c(-1, -1), h = 1L, v = 2L),  # SW
+    list(a = c(0, -1), h = 3L, v = 2L),   # S
+    list(a = c(1, -1), h = 2L, v = 2L)    # SE
+  )
+  w <- gwindow("anchors", visible = FALSE)
+  g <- ggroup(horizontal = TRUE, container = w)
+  for (i in seq_along(cases)) {
+    cs <- cases[[i]]
+    btn <- gbutton(paste0("a", i), container = g, anchor = cs$a)
+    .expect_align(getBlock(btn), halign = cs$h, valign = cs$v)
+  }
+  ## align= alias
+  balias <- gbutton("alias", container = g, align = c(1, -1))
+  .expect_align(getBlock(balias), halign = 2L, valign = 2L)
+  dispose(w)
+})
+
+test_that("ggroup expand/fill sets hexpand/vexpand and FILL", {
+  w <- gwindow("ef", visible = FALSE)
+  gh <- ggroup(horizontal = TRUE, container = w)
+  bx <- gbutton("x", container = gh, expand = TRUE, fill = "x")
+  by <- gbutton("y", container = gh, expand = TRUE, fill = "y")
+  bb <- gbutton("b", container = gh, expand = TRUE, fill = "both")
+  expect_true(as.logical(gtkWidgetGetHexpand(getBlock(bx))))
+  expect_false(as.logical(gtkWidgetGetVexpand(getBlock(bx))))
+  .expect_align(getBlock(bx), halign = 0L) ## FILL
+
+  expect_true(as.logical(gtkWidgetGetHexpand(getBlock(by))))
+  expect_true(as.logical(gtkWidgetGetVexpand(getBlock(by))))
+
+  expect_true(as.logical(gtkWidgetGetHexpand(getBlock(bb))))
+  expect_true(as.logical(gtkWidgetGetVexpand(getBlock(bb))))
+  .expect_align(getBlock(bb), halign = 0L)
+
+  gv <- ggroup(horizontal = FALSE, container = w)
+  bv <- gbutton("v", container = gv, expand = TRUE, fill = "both")
+  expect_true(as.logical(gtkWidgetGetVexpand(getBlock(bv))))
+  expect_true(as.logical(gtkWidgetGetHexpand(getBlock(bv))))
+  .expect_align(getBlock(bv), valign = 0L)
+  dispose(w)
+})
+
+test_that("glayout anchors and expand/fill map to GTK properties", {
+  w <- gwindow("lay-pack", visible = FALSE)
+  lay <- glayout(container = w)
+  ## iNZight-shaped: right-aligned label, left-aligned field
+  lay[1, 1, expand = FALSE, fill = FALSE, anchor = c(1, 0)] <- glabel("Right")
+  lay[1, 2, expand = TRUE, fill = TRUE, anchor = c(-1, 0)] <- gedit("field")
+  .expect_align(getBlock(lay[1, 1]), halign = 2L, valign = 3L)
+  field <- getBlock(lay[1, 2])
+  .expect_align(field, halign = 1L, valign = 3L)
+  expect_true(as.logical(gtkWidgetGetHexpand(field)))
+
+  lay[2, 1, expand = TRUE, fill = "both"] <- gbutton("fill")
+  fill_btn <- getBlock(lay[2, 1])
+  expect_true(as.logical(gtkWidgetGetHexpand(fill_btn)))
+  expect_true(as.logical(gtkWidgetGetVexpand(fill_btn)))
+  .expect_align(fill_btn, halign = 0L)
   dispose(w)
 })
 
@@ -96,6 +168,47 @@ test_that("scrolled ggroup constructs", {
   expect_true(is(g, "GGroup"))
   expect_false(identical(g$widget, g$block))
   dispose(w)
+})
+
+test_that("ggroup padding/margin/border box model", {
+  w <- gwindow("box", visible = FALSE)
+  g <- gvbox(padding = 5, margin = 3, border = 1, container = w)
+  expect_equal(g$get_padding(), 5)
+  expect_equal(g$get_margin(), 3)
+  expect_equal(g$get_border(), 1L)
+  expect_true(nzchar(g$.box_css_class))
+  expect_true(as.logical(gtkWidgetHasCssClass(g$widget, g$.box_css_class)))
+  ## margin on outer block (same as widget when not scrolled)
+  expect_equal(as.integer(gtkWidgetGetMarginTop(g$block))[1], 3L)
+  expect_equal(as.integer(gtkWidgetGetMarginStart(g$block))[1], 3L)
+
+  g$set_padding(c(1L, 2L, 3L, 4L))
+  expect_equal(g$get_padding(), c(1L, 2L, 3L, 4L))
+  g$set_margin(c(10L, 20L, 30L, 40L))
+  expect_equal(as.integer(gtkWidgetGetMarginTop(g$block))[1], 10L)
+  expect_equal(as.integer(gtkWidgetGetMarginEnd(g$block))[1], 20L)
+  expect_equal(as.integer(gtkWidgetGetMarginBottom(g$block))[1], 30L)
+  expect_equal(as.integer(gtkWidgetGetMarginStart(g$block))[1], 40L)
+
+  expect_warning(g$set_borderwidth(8), "deprecated")
+  expect_equal(g$get_padding(), 8)
+
+  ## scrolled: margin on scrolled window, padding CSS on inner box
+  gs <- ggroup(use.scrollwindow = TRUE, padding = 4, margin = 6, container = w)
+  expect_false(identical(gs$widget, gs$block))
+  expect_equal(as.integer(gtkWidgetGetMarginTop(gs$block))[1], 6L)
+  expect_true(as.logical(gtkWidgetHasCssClass(gs$widget, gs$.box_css_class)))
+  expect_equal(gs$get_padding(), 4)
+  dispose(w)
+})
+
+test_that("normalize_css_sides and box CSS decls helpers", {
+  expect_equal(normalize_css_sides(5L), c(5L, 5L, 5L, 5L))
+  expect_equal(normalize_css_sides(c(1L, 2L)), c(1L, 2L, 1L, 2L))
+  expect_equal(normalize_css_sides(c(1L, 2L, 3L, 4L)), c(1L, 2L, 3L, 4L))
+  expect_match(.box_model_css_decls(5L, 0L), "padding: 5px 5px 5px 5px")
+  expect_match(.box_model_css_decls(0L, 2L), "border: 2px solid")
+  expect_equal(.box_model_css_decls(0L, 0L), "")
 })
 
 test_that("gcombobox editable and items API", {
@@ -153,16 +266,29 @@ test_that("icons S3 methods and stockIconFromObject", {
   expect_equal(.stockIconFromObject.guiWidgetsToolkitRgtk4(tk, data.frame(a = 1)), "gw-dataframe")
 })
 
-test_that("set_child_expand_fill_anchor covers fill branches", {
+test_that("set_child_expand_fill_anchor covers fill branches and raw anchors", {
   skip_if_no_display()
   Rgtk4::gtkInit()
   box <- gtkBoxNew(0L, 0L)
   child <- gtkButtonNewWithLabel("z")
   gtkBoxAppend(box, child)
+
   set_child_expand_fill_anchor(child, expand = TRUE, fill = "x", horizontal = TRUE)
-  set_child_expand_fill_anchor(child, expand = TRUE, fill = "y", horizontal = FALSE)
-  set_child_expand_fill_anchor(child, expand = TRUE, fill = TRUE, horizontal = TRUE)
-  set_child_expand_fill_anchor(child, expand = TRUE, fill = "both",
-                               anchor = c(0, 0), horizontal = TRUE, padding = 2L)
-  expect_true(TRUE)
+  expect_true(as.logical(gtkWidgetGetHexpand(child)))
+  expect_false(as.logical(gtkWidgetGetVexpand(child)))
+  .expect_align(child, halign = 0L)
+
+  child2 <- gtkButtonNewWithLabel("z2")
+  gtkBoxAppend(box, child2)
+  set_child_expand_fill_anchor(child2, expand = TRUE, fill = "y", horizontal = FALSE)
+  expect_true(as.logical(gtkWidgetGetVexpand(child2)))
+  expect_false(as.logical(gtkWidgetGetHexpand(child2))) ## fill y only, not x
+  .expect_align(child2, valign = 0L)
+
+  child3 <- gtkButtonNewWithLabel("z3")
+  gtkBoxAppend(box, child3)
+  set_child_expand_fill_anchor(child3, expand = FALSE, fill = FALSE,
+                               anchor = c(-1, 1), horizontal = TRUE, padding = 2L)
+  .expect_align(child3, halign = 1L, valign = 1L)
+  expect_equal(as.integer(gtkWidgetGetMarginStart(child3))[1], 2L)
 })

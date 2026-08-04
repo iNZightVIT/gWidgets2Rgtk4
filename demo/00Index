@@ -10,3 +10,5 @@ gdf-column-dnd	Drag gdf column headers onto a V1 drop target
 gdf-column-headers-spike	Dump ColumnView CSS tree (header discovery)
 misc	Widget gallery (incl. gcalendar), gtree, gvarbrowser
 dnd	Drag-and-drop: text, object, gvarbrowser → V1/V2
+packing	expand/fill/anchor, spring, padding/margin/border
+box-model	CSS padding / margin / border on containers (interactive)

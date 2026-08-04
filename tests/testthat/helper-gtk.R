@@ -8,6 +8,23 @@ skip_if_no_display <- function() {
   skip_if_not(has_display(), "GTK requires a display")
 }
 
+## Rgtk4 returns GtkAlign as an extptr whose address is the enum value.
+align_as_int <- function(align) {
+  addr <- .Call("R_extptr_address", align, PACKAGE = "Rgtk4")
+  if (is.null(addr) || identical(addr, "(nil)"))
+    0L
+  else
+    as.integer(strtoi(addr, 16L))
+}
+
+## GTK4 Align: FILL=0, START=1, END=2, CENTER=3
+.expect_align <- function(widget, halign = NULL, valign = NULL) {
+  if (!is.null(halign))
+    expect_identical(align_as_int(gtkWidgetGetHalign(widget)), as.integer(halign))
+  if (!is.null(valign))
+    expect_identical(align_as_int(gtkWidgetGetValign(widget)), as.integer(valign))
+}
+
 ## Respond to a modal GtkDialog from an idle callback so gtkDialogRun returns.
 respond_dialog <- function(dialog, response = -5L, delay_ms = 50L) {
   gTimeoutAdd(as.integer(delay_ms), function() {

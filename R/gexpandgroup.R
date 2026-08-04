@@ -6,9 +6,12 @@ NULL
 ##' @method .gexpandgroup guiWidgetsToolkitRgtk4
 .gexpandgroup.guiWidgetsToolkitRgtk4 <- function(toolkit, text, markup, horizontal = TRUE,
                                                  handler = NULL, action = NULL,
-                                                 container = NULL, ...) {
+                                                 container = NULL,
+                                                 padding = NULL, margin = NULL, border = NULL,
+                                                 ...) {
   GExpandGroup$new(toolkit, text = text, markup = markup, horizontal = horizontal,
-                   handler = handler, action = action, container = container, ...)
+                   handler = handler, action = action, container = container,
+                   padding = padding, margin = margin, border = border, ...)
 }
 
 GExpandGroup <- setRefClass(
@@ -17,10 +20,13 @@ GExpandGroup <- setRefClass(
   fields = list(markup = "logical"),
   methods = list(
     initialize = function(toolkit = NULL, text, markup = FALSE, horizontal = TRUE,
-                          handler, action, container = NULL, ..., expand = FALSE, fill = FALSE) {
+                          handler, action, container = NULL,
+                          padding = NULL, margin = NULL, border = NULL,
+                          ..., expand = FALSE, fill = FALSE) {
       horizontal <<- horizontal
       if (is(widget, "uninitializedField"))
         make_widget(text, markup)
+      init_box_model(padding = padding, margin = margin, border = border)
       handler_id <<- add_handler_changed(handler, action)
       add_to_parent(container, .self, expand, fill, ...)
       callSuper(toolkit, horizontal = horizontal, ...)
