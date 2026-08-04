@@ -43,8 +43,11 @@ GNotebook <- setRefClass(
     },
     get_value = function(...) as.integer(gtkNotebookGetCurrentPage(widget)) + 1L,
     set_value = function(value, ...) {
-      n <- gtkNotebookGetNPages(widget)
-      gtkNotebookSetCurrentPage(widget, min(n, as.integer(value)) - 1L)
+      n <- as.integer(gtkNotebookGetNPages(widget))[1]
+      page <- as.integer(value)[1]
+      if (is.na(page) || is.na(n) || n < 1L)
+        return(invisible(NULL))
+      gtkNotebookSetCurrentPage(widget, max(0L, min(n, page) - 1L))
     },
     get_index = function(...) get_value(),
     set_index = function(value, ...) set_value(value),
@@ -62,19 +65,44 @@ GNotebook <- setRefClass(
       if (drop && length(items) == 1) items[[1]] else items
     },
     get_length = function(...) as.integer(gtkNotebookGetNPages(widget)),
-    add_child = function(child, label = "", close.button = FALSE, index = NULL, ...) {
-      lab <- gtkLabelNew(as.character(label)[1])
+    ## Signature must match gWidgets2::add.GNotebook positional call:
+    ##   obj$add_child(child, label, i, close.button, ...)
+    make_label = function(child, label, close.button = FALSE, ...) {
+      lab_txt <- as.character(label)[1]
+      if (is.na(lab_txt)) lab_txt <- ""
+      if (!isTRUE(as.logical(close.button)[1]))
+        return(gtkLabelNew(lab_txt))
+      box <- gtkBoxNew(.GtkOrientation$HORIZONTAL, 4L)
+      gtkBoxAppend(box, gtkLabelNew(lab_txt))
+      btn <- gtkButtonNew()
+      gtkButtonSetIconName(btn, "window-close")
+      try(gtkWidgetSetFocusOnClick(btn, FALSE), silent = TRUE)
+      force(child)
+      gSignalConnectR(btn, "clicked", function(...) {
+        .self$remove_child(child)
+      })
+      gtkBoxAppend(box, btn)
+      box
+    },
+    add_child = function(child, label = "", index = NULL, close.button = FALSE, ...) {
+      label_widget <- make_label(child, label, close.button, ...)
       child_block <- getBlock(child)
-      if (is.null(index)) {
-        gtkNotebookAppendPage(widget, child_block, lab)
-        page_labels <<- c(page_labels, as.character(label)[1])
-      } else if (as.integer(index) < 1) {
-        gtkNotebookPrependPage(widget, child_block, lab)
-        page_labels <<- c(as.character(label)[1], page_labels)
+      lab_chr <- as.character(label)[1]
+      if (is.na(lab_chr)) lab_chr <- ""
+
+      ## gWidgets2 may pass index=0 for an empty notebook (length == 0)
+      if (is.null(index) || (length(index) == 1L && is.na(index))) {
+        gtkNotebookAppendPage(widget, child_block, label_widget)
+        page_labels <<- c(page_labels, lab_chr)
       } else {
-        gtkNotebookInsertPage(widget, child_block, lab, as.integer(index) - 1L)
-        idx <- as.integer(index)
-        page_labels <<- append(page_labels, as.character(label)[1], after = idx - 1L)
+        idx <- suppressWarnings(as.integer(index)[1])
+        if (is.na(idx) || idx < 1L) {
+          gtkNotebookPrependPage(widget, child_block, label_widget)
+          page_labels <<- c(lab_chr, page_labels)
+        } else {
+          gtkNotebookInsertPage(widget, child_block, label_widget, as.integer(idx - 1L))
+          page_labels <<- append(page_labels, lab_chr, after = idx - 1L)
+        }
       }
       set_value(get_length())
       child_bookkeeping(child)
@@ -82,16 +110,30 @@ GNotebook <- setRefClass(
       ## so in-widget DnD does not flip tabs under the pointer.
       .dnd_notebook_disable_tab_hover_switch(widget)
     },
-    dispose_child = function(child) {
-      ## remove page containing child
+    remove_child = function(child) {
       for (i in seq_along(children)) {
         if (identical(children[[i]], child)) {
           gtkNotebookRemovePage(widget, as.integer(i - 1L))
           page_labels <<- page_labels[-i]
           children <<- children[-i]
+          child$set_parent(NULL)
           break
         }
       }
+    },
+    dispose_child = function(child) {
+      remove_child(child)
+    },
+    remove_current_page = function(...) {
+      n <- get_length()
+      if (is.na(n) || n < 1L)
+        return(invisible(NULL))
+      i <- get_value()
+      if (is.na(i) || i < 1L || i > length(children))
+        return(invisible(NULL))
+      child <- children[[i]]
+      remove_child(child)
+      invisible(NULL)
     }
   )
 )

@@ -82,3 +82,14 @@ test_that("gimage from stock and file", {
   }
   dispose(w)
 })
+
+test_that("gimage addHandlerClicked uses GestureClick (no Gtk clicked signal)", {
+  w <- gwindow("img-click", visible = FALSE)
+  n <- 0L
+  img <- gimage(stock.id = "ok", container = w)
+  expect_silent(addHandlerClicked(img, handler = function(h, ...) n <<- n + 1L))
+  img$notify_observers(signal = "clicked")
+  expect_equal(n, 1L)
+  expect_true(!is.null(img$get_attr(".click_gesture")))
+  dispose(w)
+})
