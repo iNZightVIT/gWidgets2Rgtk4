@@ -1,24 +1,24 @@
 # Widget inventory
 
-Source of truth for port status. Status values: `todo` | `wip` | `done` | `deferred`.
+Source of truth for port status. Status values: `todo` | `wip` | `done` | `spike` | `deferred`.
 
 Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 
 ## Infrastructure
 
-| Component | Source (RGtk2 backend) | ~LOC | Difficulty | Phase | Status |
-|-----------|------------------------|------|------------|-------|--------|
-| Package / NAMESPACE | `gWidgets2RGtk2-package.R` | — | Low | 0 | done |
-| Toolkit class | `misc.R` | 30 | Low | 0 | done |
-| Startup / init | `startup.R` | 12 | Low | 0 | done |
-| gtk helpers | `gtk-misc.R` | 146 | Medium | 1 | done |
-| `GComponent` | `GComponent.R` | 511 | High | 1 | done |
-| `GContainer` | `GContainer.R` | — | Medium | 1 | done |
-| `GWidget` | `GWidget.R` | — | Medium | 1 | done |
-| Icons | `icons.R` | 138 | Medium | 1 | done |
-| Doc stubs | `aaa.R` | — | Low | 1 | done |
+| Component | Source (RGtk2 backend) | ~LOC | Difficulty | Status |
+|-----------|------------------------|------|------------|--------|
+| Package / NAMESPACE | `gWidgets2RGtk2-package.R` | — | Low | done |
+| Toolkit class | `misc.R` | 30 | Low | done |
+| Startup / init | `startup.R` | 12 | Low | done |
+| gtk helpers | `gtk-misc.R` | 146 | Medium | done |
+| `GComponent` | `GComponent.R` | 511 | High | done |
+| `GContainer` | `GContainer.R` | — | Medium | done |
+| `GWidget` | `GWidget.R` | — | Medium | done |
+| Icons | `icons.R` | 138 | Medium | done |
+| Doc stubs | `aaa.R` | — | Low | done |
 
-## Phase 1 — containers
+## Containers
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
@@ -32,7 +32,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | `gpanedgroup` | `gpanedgroup.R` | — | Medium | done | `GtkPaned` |
 | `gstackwidget` | `gstackwidget.R` | — | Medium | done | `GtkStack` |
 
-## Phase 1 — controls
+## Controls
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
@@ -50,30 +50,35 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | `gseparator` | `gseparator.R` | — | Low | done | |
 | `gimage` | `gimage.R` | — | Medium | done | file / icon name |
 
-## Phase 1 — dialogs / misc
+## Dialogs / misc
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
 | dialogs | `dialogs.R` | 406 | Medium | done | message/dialog helpers |
 | `gfile` / `gfilebrowse` | `gfile.R` | 190 | Medium | done | `gtkFileChooserDialogRun` |
 | `gtimer` | `gtimer.R` | — | Low | done | `gTimeoutAdd` |
-| `gaction` | `gaction.R` | — | Medium | done | proxy + UI/Gio sync (Phase 2) |
+| `gaction` | `gaction.R` | — | Medium | done | proxy + UI/Gio sync |
+| `gcalendar` | `gcalendar.R` | — | Medium | done | Entry + modal GtkCalendar; GDateTime |
 
-## Phase 2 — iNZight / hard
+## Chrome
 
 | Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
 |-------------|------|------|------------|--------|------------|
 | `gmenu` | `gmenu.R` | 156 | Very High | done | GMenuModel + PopoverMenuBar / PopoverMenu; radio→actions, checkbox→stateful |
 | `gtoolbar` | `gtoolbar.R` | — | Very High | done | GtkBox of buttons |
 | `gstatusbar` | `gstatusbar.R` | — | High | done | GtkStatusbar push/pop |
-| `ggraphics` | `ggraphics.R` | — | High | spike | unigd device + GtkPicture PNG blit; no further Cairo/httpgd work |
+
+## Data / trees / graphics
+
+| Constructor | File | ~LOC | Difficulty | Status | GTK4 notes |
+|-------------|------|------|------------|--------|------------|
+| `ggraphics` | `ggraphics.R` | — | High | spike | unigd + GtkPicture PNG blit; no locator; no further Cairo/httpgd work |
 | `gtable` | `gtable.R` | — | High | done | ColumnView; header menus via SetHeaderMenu |
 | `gdf` | `gdf.R` | — | Very High | done | EditableLabel; mutate helpers; header menus; undo stack deferred |
 | `gtree` | `gtree.R` | — | High | done | ColumnView + TreeListModel + TreeExpander |
-| `gvarbrowser` | `gvarbrowser.R` | — | High | done | Incremental category sync; preserve expand/select; set_value/get_index |
-| `gcalendar` | `gcalendar.R` | — | Medium | done | Entry + modal GtkCalendar; GDateTime |
+| `gvarbrowser` | `gvarbrowser.R` | — | High | done | Incremental category sync; preserve expand/select |
 
-## Cross-cutting (many files)
+## Cross-cutting
 
 | Concern | Status | Notes |
 |---------|--------|-------|
@@ -84,6 +89,15 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | expand/fill/anchor | done | Mapped in packing helpers; raw gWidgets `[-1,1]` anchors (9-spot) |
 | padding/margin/border | done | CSS padding/border + GTK margin; `set_borderwidth` deprecated → `set_padding` |
 | Popup menus | done | PopoverMenu + GestureClick on GComponent |
+
+## Known stubs / gaps
+
+| API | Status |
+|-----|--------|
+| `addHandlerKeystroke` | stub — warns, does nothing |
+| `GComponent$get_size` | stub — always `-1,-1` |
+| gdf undo stack | deferred (`can_undo` / `undo` stubs) |
+| `ggraphics` locator / rubber-band | not supported |
 
 ## Not in this package
 

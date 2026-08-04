@@ -9,23 +9,21 @@ This package replaces [gWidgets2RGtk2](../gWidgets2RGtk2) for new work. The **gW
 ```r
 options(guiToolkit = "Rgtk4")
 library(gWidgets2)
-# once wired: w <- gwindow("Hello"); gbutton("OK", container = w)
+w <- gwindow("Hello")
+gbutton("OK", container = w)
 ```
 
 ## Status
 
-Phase 1 core path implemented (containers, basic controls, dialogs, files, timer, action).
-Menus, graphics, tables/gdf, and related chrome are Phase 2. See [docs/](docs/).
+Core path and extended widgets are implemented: containers, controls, dialogs, files, chrome (`gmenu` / `gtoolbar` / `gstatusbar`), tables/`gdf`, trees/`gvarbrowser`, calendar, DnD, fonts/CSS. `ggraphics` is a unigd + `GtkPicture` spike (no locator). See [docs/widget-inventory.md](docs/widget-inventory.md) for the full checklist and known stubs.
 
 ## Documentation
 
 | Doc | |
 |-----|--|
-| [docs/plan.md](docs/plan.md) | Phases and success criteria |
-| [docs/architecture.md](docs/architecture.md) | Adapter design |
-| [docs/api-mapping.md](docs/api-mapping.md) | RGtk2 → Rgtk4 mapping |
+| [docs/architecture.md](docs/architecture.md) | Adapter design and class hierarchy |
+| [docs/api-mapping.md](docs/api-mapping.md) | RGtk2 → Rgtk4 mapping and GTK4 notes |
 | [docs/widget-inventory.md](docs/widget-inventory.md) | Port checklist |
-| [docs/inzight-priorities.md](docs/inzight-priorities.md) | iNZight-guided ordering |
 
 ## Related packages
 

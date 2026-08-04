@@ -2,11 +2,11 @@
 
 ## Role in the stack
 
-`gWidgets2Rgtk4` is a **toolkit adapter**. User and application code talk to [gWidgets2](../../gWidgets2); this package supplies the GTK4 implementation.
+`gWidgets2Rgtk4` is a **toolkit adapter**. Application code talks to [gWidgets2](../../gWidgets2); this package supplies the GTK4 implementation.
 
 ```mermaid
 flowchart TD
-  app[iNZight / user code]
+  app[Application / user code]
   api[gWidgets2 public API]
   dispatch["S3 .g* methods on guiWidgetsToolkitRgtk4"]
   ref[R5 GComponent / GWidget / GContainer]
@@ -15,7 +15,16 @@ flowchart TD
   app --> api --> dispatch --> ref --> rgtk4
 ```
 
-## Toolkit discovery
+**Compatibility contract:** Keep the gWidgets2 public API (constructors, methods, handlers, packing args, semantics) as close as possible. The toolkit may change freely under the hood — functional Rgtk4 calls, GTK4 widgets, no RGtk2 `$` methods.
+
+## Naming and discovery
+
+| Piece | Value |
+|-------|--------|
+| Package | `gWidgets2Rgtk4` |
+| Toolkit option | `options(guiToolkit="Rgtk4")` |
+| S4 class | `guiWidgetsToolkitRgtk4` |
+| S3 methods | `.gbutton.guiWidgetsToolkitRgtk4`, etc. |
 
 gWidgets2 `guiToolkit()`:
 
@@ -33,7 +42,7 @@ gbutton(...)                         # gWidgets2
   → GButton$new(...)                 # reference class
 ```
 
-There is no separate registration API — naming convention is the registry.
+There is no separate registration API — naming convention is the registry. gWidgets2 lists `gWidgets2Rgtk4` in `poss_packages` and init-checks Rgtk4.
 
 ## Class hierarchy
 
@@ -74,23 +83,25 @@ Default change signal is stored in `change_signal` (`"clicked"`, `"changed"`, `"
 
 ## Package bootstrap
 
-`.onLoad` / `.onAttach` should:
+`.onLoad` / `.onAttach`:
 
 1. Ensure GTK is initialized (`Rgtk4::gtkInit()`).
 2. Start the R/GTK event loop (`Rgtk4::gtkStartEventLoop()`).
 3. Load icon mappings (`load_gwidget_icons()`).
 
-## File layout (target)
+## File layout
 
 Aligned with gWidgets2RGtk2 Collate:
 
 - Bootstrap: `gWidgets2Rgtk4-package.R`, `misc.R`, `gtk-misc.R`, `GComponent.R`, `GContainer.R`, `GWidget.R`, `aaa.R`, `startup.R`, `icons.R`
 - One file per constructor family: `gbutton.R`, `gwindow.R`, `dialogs.R`, …
+- Shared helpers: `dnd.R`, packing / CSS helpers in `gtk-misc.R`
 - `docs/` — design docs (not in the installed package)
 
 ## Design rules
 
 1. **gWidgets2 API stability first** — behavioral parity over GTK purity.
 2. **Call Rgtk4 directly** — camelCase `gtkXxxNew` / `gtkXxxSetYyy`, not a compatibility `$` facade.
-3. **Keep refclass names familiar** (`GButton`, …) where practical for later app migration; do not treat `:::` as public API.
-4. **Fail loudly** for unimplemented constructors during the port.
+3. **Keep refclass names familiar** (`GButton`, …) where practical; do not treat `:::` as public API.
+4. Prefer direct Rgtk4 calls in widgets; thin helpers in `gtk-misc.R` for packing/show/signals — do **not** fake an RGtk2 `$` layer.
+5. Mark incomplete constructors explicitly rather than silent fall-through.
