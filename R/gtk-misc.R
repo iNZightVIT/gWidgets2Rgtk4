@@ -24,55 +24,93 @@ getBlock.RGtkObject <- function(obj) obj
 ## GTK4 PolicyType: ALWAYS=0, AUTOMATIC=1, NEVER=2
 .GtkPolicyType <- list(ALWAYS = 0L, AUTOMATIC = 1L, NEVER = 2L)
 
+## Parse gWidgets fill (NULL/logical/character) into per-axis flags.
+.parse_fill_axes <- function(fill) {
+  fill_h <- FALSE
+  fill_v <- FALSE
+  if (is.null(fill))
+    return(list(h = FALSE, v = FALSE))
+  if (is.logical(fill)) {
+    fill_h <- isTRUE(fill)
+    fill_v <- isTRUE(fill)
+  } else if (is.character(fill)) {
+    fill <- tolower(fill[1])
+    if (identical(fill, "true") || identical(fill, "both")) {
+      fill_h <- TRUE
+      fill_v <- TRUE
+    } else {
+      fill_h <- fill %in% c("x")
+      fill_v <- fill %in% c("y")
+    }
+  }
+  list(h = fill_h, v = fill_v)
+}
+
+## gWidgets anchor in [-1,1]^2 → GTK Align (flip y: gWidgets +1 is top).
+.anchor_to_align <- function(anchor) {
+  ax <- as.numeric(anchor[1])
+  ay <- as.numeric(anchor[2])
+  list(
+    h = if (ax < -0.33) .GtkAlign$START else if (ax > 0.33) .GtkAlign$END else .GtkAlign$CENTER,
+    v = if (ay > 0.33) .GtkAlign$START else if (ay < -0.33) .GtkAlign$END else .GtkAlign$CENTER
+  )
+}
+
 ## Map gWidgets expand/fill/anchor onto GTK4 widget properties.
-## expand/fill/anchor use gWidgets conventions; child is a GtkWidget.
+##
+## GTK4 compute_expand propagates child expand up the tree. Setting the
+## *cross-axis* expand flag (e.g. vexpand inside a horizontal GtkBox) makes
+## toolbars/menubars steal vertical space from content — the "skinny tall
+## buttons" failure mode. Match GTK2 packStart: expand only along the box
+## axis; use halign/valign FILL for fill (including cross-axis stretch within
+## the allocation). Pin expand=FALSE explicitly so children cannot poison
+## parents via compute_expand.
+##
+## horizontal: TRUE = horizontal box, FALSE = vertical box, NA = GtkGrid
+## (expand on each axis fill requests, as gtk_table Attach did).
 set_child_expand_fill_anchor <- function(child, expand = FALSE, fill = NULL,
                                          anchor = NULL, horizontal = TRUE,
                                          padding = 0L) {
   expand <- isTRUE(expand)
+  grid <- isTRUE(is.na(horizontal))
 
-  if (!is.null(anchor)) {
-    ## gWidgets anchor in [-1,1]^2 → GTK align
-    ax <- as.numeric(anchor[1])
-    ay <- as.numeric(anchor[2])
-    ## flip y: gWidgets +1 is top, GTK START is top
-    halign <- if (ax < -0.33) .GtkAlign$START else if (ax > 0.33) .GtkAlign$END else .GtkAlign$CENTER
-    valign <- if (ay > 0.33) .GtkAlign$START else if (ay < -0.33) .GtkAlign$END else .GtkAlign$CENTER
-    gtkWidgetSetHalign(child, halign)
-    gtkWidgetSetValign(child, valign)
-  }
-
-  fill_h <- FALSE
-  fill_v <- FALSE
   if (expand) {
     if (is.null(fill))
       fill <- if (is.null(anchor)) "both" else ""
-    if (is.logical(fill)) {
-      fill_h <- fill
-      fill_v <- fill
-    } else if (is.character(fill)) {
-      fill <- tolower(fill[1])
-      fill_h <- fill %in% c("both", "x", "TRUE", "true")
-      fill_v <- fill %in% c("both", "y", "TRUE", "true")
-      if (identical(fill, "true") || identical(fill, "TRUE") || fill == "both") {
-        fill_h <- TRUE
-        fill_v <- TRUE
-      }
-    }
-    if (horizontal) {
-      gtkWidgetSetHexpand(child, TRUE)
-      if (fill_h && is.null(anchor))
-        gtkWidgetSetHalign(child, .GtkAlign$FILL)
-      if (fill_v)
-        gtkWidgetSetVexpand(child, TRUE)
-    } else {
-      gtkWidgetSetVexpand(child, TRUE)
-      if (fill_v && is.null(anchor))
-        gtkWidgetSetValign(child, .GtkAlign$FILL)
-      if (fill_h)
-        gtkWidgetSetHexpand(child, TRUE)
-    }
   }
+  axes <- .parse_fill_axes(fill)
+  fill_h <- axes$h
+  fill_v <- axes$v
+
+  if (grid) {
+    ## GtkGrid / historical gtk_table Attach: expand only on axes fill requests
+    if (expand) {
+      gtkWidgetSetHexpand(child, fill_h)
+      gtkWidgetSetVexpand(child, fill_v)
+    } else {
+      gtkWidgetSetHexpand(child, FALSE)
+      gtkWidgetSetVexpand(child, FALSE)
+    }
+  } else if (horizontal) {
+    gtkWidgetSetHexpand(child, expand)
+    ## Never vexpand from box packing — blocks toolbar/menubar poison
+    gtkWidgetSetVexpand(child, FALSE)
+  } else {
+    gtkWidgetSetVexpand(child, expand)
+    gtkWidgetSetHexpand(child, FALSE)
+  }
+
+  ## Align: FILL wins on axes being filled; else anchor; else leave default
+  an <- if (!is.null(anchor)) .anchor_to_align(anchor) else NULL
+  if (fill_h)
+    gtkWidgetSetHalign(child, .GtkAlign$FILL)
+  else if (!is.null(an))
+    gtkWidgetSetHalign(child, an$h)
+
+  if (fill_v)
+    gtkWidgetSetValign(child, .GtkAlign$FILL)
+  else if (!is.null(an))
+    gtkWidgetSetValign(child, an$v)
 
   padding <- as.integer(padding)[1]
   if (!is.na(padding) && padding > 0L) {

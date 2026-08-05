@@ -53,9 +53,9 @@ GLayout <- setRefClass(
       child <- getBlock(value)
       expand <- getWithDefault(expand, getWithDefault(value$default_expand, FALSE))
       fill <- getWithDefault(fill, getWithDefault(value$default_fill, "both"))
-      ## Pass raw gWidgets [-1,1] anchors; helper owns GTK mapping
+      ## Grid mode (horizontal = NA): per-axis expand like gtk_table Attach
       set_child_expand_fill_anchor(child, expand = expand, fill = fill,
-                                   anchor = anchor, horizontal = TRUE)
+                                   anchor = anchor, horizontal = NA)
       ## GtkGrid is 0-based
       left <- as.integer(min(j) - 1L)
       top <- as.integer(min(i) - 1L)

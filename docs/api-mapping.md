@@ -25,7 +25,9 @@ Function *names* are often similar (camelCase, RGtk2 style). Call *style* and GT
 | `gtkTable` | `gtkGridNew` + `gtkGridAttach` |
 | `gtkEventBox` | usually omit; gestures/controllers if needed |
 
-gWidgets2 packing args (`expand`, `fill`, `anchor`) map via `set_child_expand_fill_anchor()` onto hexpand/vexpand/halign/valign. Anchors are raw gWidgets `[-1,1]^2` (nine edge/corner/center spots); callers must not pre-convert to `[0,1]`. Semantics may still be approximate where GTK4 has no 1:1 with GTK2 `packStart` fill.
+gWidgets2 packing args (`expand`, `fill`, `anchor`) map via `set_child_expand_fill_anchor()` onto hexpand/vexpand/halign/valign. Anchors are raw gWidgets `[-1,1]^2` (nine edge/corner/center spots); callers must not pre-convert to `[0,1]`.
+
+**GTK4 note:** `compute_expand` propagates child expand up the tree. Box packing therefore expands **only along the box axis** (like GTK2 `packStart`); cross-axis `fill` uses `halign`/`valign` FILL, not cross-axis expand. `expand=FALSE` pins the main-axis expand flag so springs/children cannot poison parents. `glayout` uses grid mode (`horizontal = NA`) so `fill="both"` can still expand both axes. Springs expand only along the box orientation.
 
 Box containers accept constructor `padding` / `margin` / `border` (CSS box model: padding+border via CSS on the inner box; margin via GTK margins on the outer block). Prefer `set_padding` / `set_margin` / `set_border`; `set_borderwidth` is a deprecated warning alias for `set_padding`.
 

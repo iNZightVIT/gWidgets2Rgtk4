@@ -97,9 +97,16 @@ GGroupBase <- setRefClass(
       gtkBoxRemove(widget, getBlock(child))
     },
     add_spring = function() {
+      ## Expand only along the box axis. Cross-axis expand propagates via
+      ## GTK4 compute_expand and stretches toolbars/rows into "skinny tall" widgets.
       spring <- gtkBoxNew(.GtkOrientation$HORIZONTAL, 0L)
-      gtkWidgetSetHexpand(spring, TRUE)
-      gtkWidgetSetVexpand(spring, TRUE)
+      if (horizontal) {
+        gtkWidgetSetHexpand(spring, TRUE)
+        gtkWidgetSetVexpand(spring, FALSE)
+      } else {
+        gtkWidgetSetVexpand(spring, TRUE)
+        gtkWidgetSetHexpand(spring, FALSE)
+      }
       gtkBoxAppend(widget, spring)
     },
     add_space = function(value) {

@@ -86,7 +86,7 @@ Line counts are from gWidgets2RGtk2 at planning time (~8458 LOC total).
 | Stock icons | done | Compatibility map in `gtk-misc.R` / `icons.R` |
 | DnD | done | `dnd.R` + GComponent; gdf column headers via `add_dnd_columns` |
 | Font setters | done | CSS via `font<-` / `css<-` / `loadCss`; gtext TextTags |
-| expand/fill/anchor | done | Mapped in packing helpers; raw gWidgets `[-1,1]` anchors (9-spot) |
+| expand/fill/anchor | done | Box: expand on main axis only (GTK4 compute_expand-safe); fill → FILL align; grid mode for glayout; springs axis-only |
 | padding/margin/border | done | CSS padding/border + GTK margin; `set_borderwidth` deprecated → `set_padding` |
 | Popup menus | done | PopoverMenu + GestureClick on GComponent |
 

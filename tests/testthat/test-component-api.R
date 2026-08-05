@@ -172,28 +172,53 @@ test_that("ggroup nine-spot anchors map to GTK START/CENTER/END", {
   dispose(w)
 })
 
-test_that("ggroup expand/fill sets hexpand/vexpand and FILL", {
+test_that("ggroup expand/fill sets axis expand and FILL (not cross-axis expand)", {
   w <- gwindow("ef", visible = FALSE)
   gh <- ggroup(horizontal = TRUE, container = w)
   bx <- gbutton("x", container = gh, expand = TRUE, fill = "x")
   by <- gbutton("y", container = gh, expand = TRUE, fill = "y")
   bb <- gbutton("b", container = gh, expand = TRUE, fill = "both")
+  ## Horizontal box: expand → hexpand only; fill axes → FILL align, never vexpand
   expect_true(as.logical(gtkWidgetGetHexpand(getBlock(bx))))
   expect_false(as.logical(gtkWidgetGetVexpand(getBlock(bx))))
   .expect_align(getBlock(bx), halign = 0L) ## FILL
 
   expect_true(as.logical(gtkWidgetGetHexpand(getBlock(by))))
-  expect_true(as.logical(gtkWidgetGetVexpand(getBlock(by))))
+  expect_false(as.logical(gtkWidgetGetVexpand(getBlock(by))))
+  .expect_align(getBlock(by), valign = 0L) ## cross-axis FILL, not vexpand
 
   expect_true(as.logical(gtkWidgetGetHexpand(getBlock(bb))))
-  expect_true(as.logical(gtkWidgetGetVexpand(getBlock(bb))))
-  .expect_align(getBlock(bb), halign = 0L)
+  expect_false(as.logical(gtkWidgetGetVexpand(getBlock(bb))))
+  .expect_align(getBlock(bb), halign = 0L, valign = 0L)
 
   gv <- ggroup(horizontal = FALSE, container = w)
   bv <- gbutton("v", container = gv, expand = TRUE, fill = "both")
   expect_true(as.logical(gtkWidgetGetVexpand(getBlock(bv))))
-  expect_true(as.logical(gtkWidgetGetHexpand(getBlock(bv))))
-  .expect_align(getBlock(bv), valign = 0L)
+  expect_false(as.logical(gtkWidgetGetHexpand(getBlock(bv))))
+  .expect_align(getBlock(bv), halign = 0L, valign = 0L)
+
+  ## expand=FALSE pins main-axis expand so children cannot poison parent
+  b0 <- gbutton("0", container = gv, expand = FALSE)
+  expect_false(as.logical(gtkWidgetGetVexpand(getBlock(b0))))
+  expect_false(as.logical(gtkWidgetGetHexpand(getBlock(b0))))
+  dispose(w)
+})
+
+test_that("add_spring expands only along box orientation", {
+  w <- gwindow("spring", visible = FALSE)
+  gh <- ggroup(horizontal = TRUE, container = w)
+  gbutton("a", container = gh)
+  gh$add_spring()
+  spring_h <- gtkWidgetGetLastChild(gh$widget)
+  expect_true(as.logical(gtkWidgetGetHexpand(spring_h)))
+  expect_false(as.logical(gtkWidgetGetVexpand(spring_h)))
+
+  gv <- gvbox(container = w)
+  gbutton("b", container = gv)
+  gv$add_spring()
+  spring_v <- gtkWidgetGetLastChild(gv$widget)
+  expect_true(as.logical(gtkWidgetGetVexpand(spring_v)))
+  expect_false(as.logical(gtkWidgetGetHexpand(spring_v)))
   dispose(w)
 })
 
@@ -205,17 +230,67 @@ test_that("glayout anchors and expand/fill map to GTK properties", {
   lay[1, 2, expand = TRUE, fill = TRUE, anchor = c(-1, 0)] <- gedit("field")
   .expect_align(getBlock(lay[1, 1]), halign = 2L, valign = 3L)
   field <- getBlock(lay[1, 2])
-  .expect_align(field, halign = 1L, valign = 3L)
+  ## fill wins over anchor on filled axes (RGtk2 ignored anchor on non-Misc)
+  .expect_align(field, halign = 0L)
   expect_true(as.logical(gtkWidgetGetHexpand(field)))
+  expect_true(as.logical(gtkWidgetGetVexpand(field))) ## fill=TRUE → both axes
 
   lay[2, 1, expand = TRUE, fill = "both"] <- gbutton("fill")
   fill_btn <- getBlock(lay[2, 1])
   expect_true(as.logical(gtkWidgetGetHexpand(fill_btn)))
   expect_true(as.logical(gtkWidgetGetVexpand(fill_btn)))
-  .expect_align(fill_btn, halign = 0L)
+  .expect_align(fill_btn, halign = 0L, valign = 0L)
+
+  ## fill="x" expands horizontally only (iNZight [<- default via fil→fill)
+  lay[3, 1, expand = TRUE, fill = "x"] <- gbutton("fx")
+  fx <- getBlock(lay[3, 1])
+  expect_true(as.logical(gtkWidgetGetHexpand(fx)))
+  expect_false(as.logical(gtkWidgetGetVexpand(fx)))
   dispose(w)
 })
 
+test_that("set_child_expand_fill_anchor covers fill branches and raw anchors", {
+  skip_if_no_display()
+  Rgtk4::gtkInit()
+  box <- gtkBoxNew(0L, 0L)
+  child <- gtkButtonNewWithLabel("z")
+  gtkBoxAppend(box, child)
+
+  set_child_expand_fill_anchor(child, expand = TRUE, fill = "x", horizontal = TRUE)
+  expect_true(as.logical(gtkWidgetGetHexpand(child)))
+  expect_false(as.logical(gtkWidgetGetVexpand(child)))
+  .expect_align(child, halign = 0L)
+
+  child2 <- gtkButtonNewWithLabel("z2")
+  gtkBoxAppend(box, child2)
+  set_child_expand_fill_anchor(child2, expand = TRUE, fill = "y", horizontal = FALSE)
+  expect_true(as.logical(gtkWidgetGetVexpand(child2)))
+  expect_false(as.logical(gtkWidgetGetHexpand(child2)))
+  .expect_align(child2, valign = 0L)
+
+  ## Cross-axis fill in horizontal box: FILL align, not vexpand
+  child2b <- gtkButtonNewWithLabel("z2b")
+  gtkBoxAppend(box, child2b)
+  set_child_expand_fill_anchor(child2b, expand = TRUE, fill = "both", horizontal = TRUE)
+  expect_true(as.logical(gtkWidgetGetHexpand(child2b)))
+  expect_false(as.logical(gtkWidgetGetVexpand(child2b)))
+  .expect_align(child2b, halign = 0L, valign = 0L)
+
+  child3 <- gtkButtonNewWithLabel("z3")
+  gtkBoxAppend(box, child3)
+  set_child_expand_fill_anchor(child3, expand = FALSE, fill = FALSE,
+                               anchor = c(-1, 1), horizontal = TRUE, padding = 2L)
+  .expect_align(child3, halign = 1L, valign = 1L)
+  expect_false(as.logical(gtkWidgetGetHexpand(child3)))
+  expect_equal(as.integer(gtkWidgetGetMarginStart(child3))[1], 2L)
+
+  ## Grid mode: fill="both" expands both axes
+  child4 <- gtkButtonNewWithLabel("z4")
+  gtkBoxAppend(box, child4)
+  set_child_expand_fill_anchor(child4, expand = TRUE, fill = "both", horizontal = NA)
+  expect_true(as.logical(gtkWidgetGetHexpand(child4)))
+  expect_true(as.logical(gtkWidgetGetVexpand(child4)))
+})
 test_that("scrolled ggroup constructs", {
   w <- gwindow("scroll", visible = FALSE)
   g <- ggroup(horizontal = FALSE, use.scrollwindow = TRUE, container = w)
@@ -318,31 +393,4 @@ test_that("icons S3 methods and stockIconFromObject", {
   expect_equal(.stockIconFromObject.guiWidgetsToolkitRgtk4(tk, "x"), "gw-character")
   expect_equal(.stockIconFromObject.guiWidgetsToolkitRgtk4(tk, factor("a")), "gw-factor")
   expect_equal(.stockIconFromObject.guiWidgetsToolkitRgtk4(tk, data.frame(a = 1)), "gw-dataframe")
-})
-
-test_that("set_child_expand_fill_anchor covers fill branches and raw anchors", {
-  skip_if_no_display()
-  Rgtk4::gtkInit()
-  box <- gtkBoxNew(0L, 0L)
-  child <- gtkButtonNewWithLabel("z")
-  gtkBoxAppend(box, child)
-
-  set_child_expand_fill_anchor(child, expand = TRUE, fill = "x", horizontal = TRUE)
-  expect_true(as.logical(gtkWidgetGetHexpand(child)))
-  expect_false(as.logical(gtkWidgetGetVexpand(child)))
-  .expect_align(child, halign = 0L)
-
-  child2 <- gtkButtonNewWithLabel("z2")
-  gtkBoxAppend(box, child2)
-  set_child_expand_fill_anchor(child2, expand = TRUE, fill = "y", horizontal = FALSE)
-  expect_true(as.logical(gtkWidgetGetVexpand(child2)))
-  expect_false(as.logical(gtkWidgetGetHexpand(child2))) ## fill y only, not x
-  .expect_align(child2, valign = 0L)
-
-  child3 <- gtkButtonNewWithLabel("z3")
-  gtkBoxAppend(box, child3)
-  set_child_expand_fill_anchor(child3, expand = FALSE, fill = FALSE,
-                               anchor = c(-1, 1), horizontal = TRUE, padding = 2L)
-  .expect_align(child3, halign = 1L, valign = 1L)
-  expect_equal(as.integer(gtkWidgetGetMarginStart(child3))[1], 2L)
 })
