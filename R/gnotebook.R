@@ -113,10 +113,11 @@ GNotebook <- setRefClass(
     remove_child = function(child) {
       for (i in seq_along(children)) {
         if (identical(children[[i]], child)) {
-          gtkNotebookRemovePage(widget, as.integer(i - 1L))
+          tryCatch(gtkNotebookRemovePage(widget, as.integer(i - 1L)),
+                   error = function(e) invisible(NULL))
           page_labels <<- page_labels[-i]
           children <<- children[-i]
-          child$set_parent(NULL)
+          try(child$set_parent(NULL), silent = TRUE)
           break
         }
       }

@@ -64,10 +64,13 @@ GGroupBase <- setRefClass(
       apply_box_model(.self)
       invisible(NULL)
     },
-    ## Deprecated: GTK2 border-width ≡ CSS padding
+    ## Deprecated: GTK2 border-width ≡ CSS padding. Warn once per session.
     set_borderwidth = function(value, ...) {
-      warning("'set_borderwidth' is deprecated; use 'set_padding' instead",
-              call. = FALSE)
+      if (!isTRUE(getOption("gWidgets2Rgtk4.warned_borderwidth", FALSE))) {
+        warning("'set_borderwidth' is deprecated; use 'set_padding' instead",
+                call. = FALSE)
+        options(gWidgets2Rgtk4.warned_borderwidth = TRUE)
+      }
       set_padding(value, ...)
     },
     add_child = function(child, expand, fill, anchor, ...) {
@@ -93,8 +96,11 @@ GGroupBase <- setRefClass(
     },
     remove_child = function(child) {
       children <<- Filter(function(x) !identical(x, child), children)
-      child$set_parent(NULL)
-      gtkBoxRemove(widget, getBlock(child))
+      try(child$set_parent(NULL), silent = TRUE)
+      ## Window destroy may already have finalized GTK widgets; ignore NULLs.
+      blk <- tryCatch(getBlock(child), error = function(e) NULL)
+      if (!is.null(blk) && !is.null(widget))
+        tryCatch(gtkBoxRemove(widget, blk), error = function(e) invisible(NULL))
     },
     add_spring = function() {
       ## Expand only along the box axis. Cross-axis expand propagates via

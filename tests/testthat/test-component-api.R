@@ -78,9 +78,28 @@ test_that("gwindow size/position/center helpers", {
   sz <- size(w)
   expect_equal(unname(sz), c(320L, 240L))
   w$set_position(10L, 20L)
-  expect_equal(unname(w$get_position()), c(10L, 20L))
+  pos <- w$get_position()
+  expect_equal(unname(pos), c(10L, 20L))
+  ## Named for iNZight$reload() ipos[["x"]] / ipos[["y"]]
+  expect_equal(pos[["x"]], 10L)
+  expect_equal(pos[["y"]], 20L)
+  expect_identical(names(pos), c("x", "y"))
+  ## Default before set_position also named
+  w2 <- gwindow("geo2", visible = FALSE)
+  pos0 <- w2$get_position()
+  expect_identical(names(pos0), c("x", "y"))
   expect_silent(w$center())
   dispose(w)
+  dispose(w2)
+})
+
+test_that("ggroup remove_child tolerates destroyed GTK widgets", {
+  w <- gwindow("rm", visible = FALSE)
+  g <- gvbox(container = w)
+  b <- gbutton("x", container = g)
+  dispose(w)
+  ## After window destroy, remove should not error (iNZight destroy handlers)
+  expect_silent(g$remove_child(b))
 })
 
 test_that("gtext margins and scroll_to", {
@@ -180,6 +199,7 @@ test_that("ggroup packing helpers, spring, space, spacing", {
   expect_equal(svalue(g), 8)
   g$add_spring()
   g$add_space(10)
+  options(gWidgets2Rgtk4.warned_borderwidth = FALSE)
   expect_warning(g$set_borderwidth(3), "deprecated")
   expect_equal(g$get_padding(), 3)
   g$set_size(c(200, 100))
@@ -364,6 +384,7 @@ test_that("ggroup padding/margin/border box model", {
   expect_equal(as.integer(gtkWidgetGetMarginBottom(g$block))[1], 30L)
   expect_equal(as.integer(gtkWidgetGetMarginStart(g$block))[1], 40L)
 
+  options(gWidgets2Rgtk4.warned_borderwidth = FALSE)
   expect_warning(g$set_borderwidth(8), "deprecated")
   expect_equal(g$get_padding(), 8)
 

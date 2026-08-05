@@ -99,10 +99,12 @@ GWindow <- setRefClass(
     ## GTK4: apps cannot reliably move toplevels (esp. Wayland). Track requested
     ## coords for API parity; present() is the portable action.
     get_position = function() {
-      if (is(.window_pos, "uninitializedField") || is.null(.window_pos))
-        c(x = -1L, y = -1L)
-      else
-        as.integer(.window_pos)
+      ## Always return a named integer vector; as.integer() drops names and
+      ## breaks callers like iNZight$reload() that use ipos[["x"]].
+      if (is(.window_pos, "uninitializedField") || is.null(.window_pos) ||
+          length(.window_pos) < 2L)
+        return(c(x = -1L, y = -1L))
+      c(x = as.integer(.window_pos[[1]])[1], y = as.integer(.window_pos[[2]])[1])
     },
     set_position = function(x, y = NULL) {
       if (length(x) >= 2L && (missing(y) || is.null(y))) {
@@ -168,8 +170,10 @@ GWindow <- setRefClass(
       child_bookkeeping(child)
     },
     remove_child = function(child) {
-      child$set_parent(NULL)
-      gtkBoxRemove(content_area, getBlock(child))
+      try(child$set_parent(NULL), silent = TRUE)
+      blk <- tryCatch(getBlock(child), error = function(e) NULL)
+      if (!is.null(blk) && !is.null(content_area))
+        tryCatch(gtkBoxRemove(content_area, blk), error = function(e) invisible(NULL))
     },
     dispose_window = function() {
       gtkWindowDestroy(widget)
