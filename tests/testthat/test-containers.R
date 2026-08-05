@@ -70,3 +70,50 @@ test_that("gpanedgroup accepts two children", {
   expect_equal(length(pg), 2)
   dispose(w)
 })
+
+test_that("gpanedgroup maps expand to resize and honors size request", {
+  w <- gwindow("pg-size", visible = FALSE, width = 900, height = 400)
+  pg <- gpanedgroup(container = w, expand = TRUE)
+  left <- ggroup(container = pg, expand = FALSE)
+  size(left) <- c(220, -1)
+  glabel("L", container = left)
+  right <- ggroup(container = pg, expand = TRUE)
+  glabel("R", container = right)
+
+  expect_false(as.logical(Rgtk4::gtkPanedGetResizeStartChild(pg$widget)))
+  expect_true(as.logical(Rgtk4::gtkPanedGetResizeEndChild(pg$widget)))
+  expect_false(as.logical(Rgtk4::gtkPanedGetShrinkStartChild(pg$widget)))
+  expect_false(as.logical(Rgtk4::gtkPanedGetShrinkEndChild(pg$widget)))
+
+  visible(w) <- TRUE
+  for (i in 1:20)
+    Rgtk4::gtkMainIterationDo(FALSE)
+
+  expect_equal(as.integer(unname(size(left)[1])), 220L)
+  dispose(w)
+})
+
+test_that("gpanedgroup svalue uses proportion or integer pixels", {
+  w <- gwindow("pg-svalue", visible = FALSE, width = 800, height = 300)
+  pg <- gpanedgroup(container = w, expand = TRUE)
+  gbutton("L", container = pg)
+  gbutton("R", container = pg)
+  visible(w) <- TRUE
+  for (i in 1:20)
+    Rgtk4::gtkMainIterationDo(FALSE)
+
+  svalue(pg) <- 0.25
+  for (i in 1:10)
+    Rgtk4::gtkMainIterationDo(FALSE)
+  expect_equal(
+    as.integer(Rgtk4::gtkPanedGetPosition(pg$widget)),
+    as.integer(0.25 * unname(size(pg)[1]))
+  )
+  expect_equal(unname(svalue(pg)), 0.25, tolerance = 0.02)
+
+  svalue(pg) <- 180L
+  for (i in 1:10)
+    Rgtk4::gtkMainIterationDo(FALSE)
+  expect_equal(as.integer(Rgtk4::gtkPanedGetPosition(pg$widget)), 180L)
+  dispose(w)
+})
