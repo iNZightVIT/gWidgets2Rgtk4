@@ -24,6 +24,16 @@ GSlider <- setRefClass(
       items <<- sort(unique(x))
       orient <- if (horizontal) .GtkOrientation$HORIZONTAL else .GtkOrientation$VERTICAL
       widget <<- gtkScaleNewWithRange(orient, 1, length(items), 1)
+      ## Discrete index scale: snap thumb to integers (GTK default round_digits=-1
+      ## leaves continuous fractions between steps — feels "too smooth" for factors).
+      gtkRangeSetRoundDigits(widget, 0L)
+      gtkRangeSetIncrements(widget, 1, 1)
+      ## Show item labels (RGtk2 used format-value); value is the 1..n index.
+      gtkScaleSetFormatValueFunc(widget, function(scale, value) {
+        i <- as.integer(round(value))
+        if (i < 1L || i > length(items)) return("")
+        format(items[i], digits = 3)
+      })
       set_value(value[1])
       initFields(
         block = widget,
