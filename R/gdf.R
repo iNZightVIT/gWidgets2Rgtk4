@@ -647,7 +647,7 @@ GDf <- setRefClass(
 
     get_length = function(...) ncol(items),
     get_dim = function(...) {
-      c(rows = as.integer(sum(row_visible)), columns = as.integer(ncol(items)))
+      c(rows = as.integer(sum(row_visible)), cols = as.integer(ncol(items)))
     },
     get_names = function(...) {
       if (length(col_names)) col_names else names(items)

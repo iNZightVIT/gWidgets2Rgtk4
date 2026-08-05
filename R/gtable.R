@@ -429,7 +429,7 @@ GTable <- setRefClass(
     },
     get_length = function(...) length(display_columns()),
     get_dim = function(...) {
-      c(rows = as.integer(sum(row_visible)), columns = length(display_columns()))
+      c(rows = as.integer(sum(row_visible)), cols = length(display_columns()))
     },
     get_names = function(...) {
       if (length(col_names))
