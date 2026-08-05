@@ -54,8 +54,9 @@ GComboBoxNoEntry <- setRefClass(
       widget <<- gtkComboBoxTextNew()
       for (it in .self$items)
         gtkComboBoxTextAppendText(widget, it)
-      if (selected > 0)
-        set_index(selected)
+      sel <- as.integer(selected)[1]
+      if (length(sel) == 1L && !is.na(sel) && sel > 0L)
+        set_index(sel)
       initFields(block = widget, coerce_with = coerce.with, change_signal = "changed")
       add_to_parent(container, .self, ...)
       handler_id <<- add_handler_changed(handler, action)
@@ -101,8 +102,9 @@ GComboBoxWithEntry <- setRefClass(
       widget <<- gtkComboBoxTextNewWithEntry()
       for (it in .self$items)
         gtkComboBoxTextAppendText(widget, it)
-      if (selected > 0)
-        set_index(selected)
+      sel <- as.integer(selected)[1]
+      if (length(sel) == 1L && !is.na(sel) && sel > 0L)
+        set_index(sel)
       initFields(block = widget, coerce_with = coerce.with, change_signal = "changed")
       add_to_parent(container, .self, ...)
       handler_id <<- add_handler_changed(handler, action)

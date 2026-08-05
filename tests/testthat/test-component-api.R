@@ -419,6 +419,11 @@ test_that("gcombobox editable and items API", {
   expect_true(nzchar(svalue(cbe)))
   svalue(cbe) <- "custom"
   expect_equal(svalue(cbe), "custom")
+
+  ## empty / NA selected (e.g. which(...) with no match) must not error
+  expect_error(gcombobox(c("a", "b"), selected = integer(0), container = w), NA)
+  expect_error(gcombobox(c("a", "b"), selected = NA, container = w), NA)
+  expect_error(gcombobox(c("a", "b"), selected = integer(0), editable = TRUE, container = w), NA)
   dispose(w)
 })
 

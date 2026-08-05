@@ -22,6 +22,40 @@ test_that("selection and numeric controls", {
   dispose(w)
 })
 
+test_that("gslider discrete character and factor items", {
+  w <- gwindow("sl-disc", visible = FALSE)
+  lev <- c("<20", "20-40", "40+")
+  sl_chr <- gslider(from = lev, value = lev[2], container = w)
+  expect_equal(as.character(svalue(sl_chr)), "20-40")
+  svalue(sl_chr) <- "<20"
+  expect_equal(as.character(svalue(sl_chr)), "<20")
+  svalue(sl_chr) <- "40+"
+  expect_equal(as.character(svalue(sl_chr)), "40+")
+  ## unmatched label is a no-op (must not error / hang)
+  svalue(sl_chr) <- "no-such-bin"
+  expect_equal(as.character(svalue(sl_chr)), "40+")
+
+  fac <- factor(lev, levels = lev)
+  sl_fac <- gslider(from = fac, value = fac[1], container = w)
+  expect_equal(as.character(svalue(sl_fac)), "<20")
+  svalue(sl_fac) <- "20-40"
+  expect_equal(as.character(svalue(sl_fac)), "20-40")
+  dispose(w)
+})
+
+test_that("gcombobox tolerates empty/NA/NULL selected", {
+  w <- gwindow("cb-sel", visible = FALSE)
+  items <- c("a", "b", "c")
+  expect_error(cb0 <- gcombobox(items, selected = integer(0), container = w), NA)
+  expect_equal(svalue(cb0), "")
+  expect_error(gcombobox(items, selected = NA_integer_, container = w), NA)
+  expect_error(gcombobox(items, selected = NULL, container = w), NA)
+  ## length-1 numeric path unchanged
+  cb1 <- gcombobox(items, selected = 2, container = w)
+  expect_equal(svalue(cb1), "b")
+  dispose(w)
+})
+
 test_that("gtext get/set value", {
   w <- gwindow("txt", visible = FALSE)
   t <- gtext("hello", container = w, height = 100)

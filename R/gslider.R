@@ -37,11 +37,19 @@ GSlider <- setRefClass(
     },
     get_value = function(drop = TRUE, ...) items[get_index()],
     set_value = function(value, drop = TRUE, ...) {
-      idx <- which.min(abs(items - as.numeric(value)[1]))
+      ## Numeric items: nearest value. Character/factor items: label match
+      ## (RGtk2 used pmatch; arithmetic fails on factors with Ops.factor).
+      if (is.numeric(items)) {
+        idx <- which.min(abs(items - as.numeric(value)[1]))
+      } else {
+        idx <- match(as.character(value)[1], as.character(items))
+        if (is.na(idx)) return()
+      }
       set_index(idx)
     },
     get_index = function(...) as.integer(round(gtkRangeGetValue(widget))),
     set_index = function(value, ...) {
+      if (length(value) < 1L || is.na(value[1])) return()
       gtkRangeSetValue(widget, as.numeric(value)[1])
     }
   )
