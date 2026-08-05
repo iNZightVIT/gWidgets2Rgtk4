@@ -66,6 +66,19 @@ GLayout <- setRefClass(
       ncols <<- as.integer(max(ncols, max(j)))
       child_positions <<- c(child_positions, list(list(x = i, y = j, child = value)))
       child_bookkeeping(value)
+    },
+    remove_child = function(child) {
+      ## Match RGtk2 GLayout: drop from child_positions/children and detach GTK child.
+      if (!is(child, "GComponent"))
+        return()
+      child_positions <<- Filter(function(item) {
+        !identical(item$child, child)
+      }, child_positions)
+      children <<- Filter(function(x) !identical(x, child), children)
+      try(child$set_parent(NULL), silent = TRUE)
+      blk <- tryCatch(getBlock(child), error = function(e) NULL)
+      if (!is.null(blk) && !is.null(widget))
+        tryCatch(gtkGridRemove(widget, blk), error = function(e) invisible(NULL))
     }
   )
 )

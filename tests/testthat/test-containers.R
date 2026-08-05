@@ -22,6 +22,28 @@ test_that("glayout attaches children", {
   dispose(w)
 })
 
+test_that("glayout remove_child updates child_positions", {
+  w <- gwindow("lay-rm", visible = FALSE)
+  lay <- glayout(container = w)
+  lay[1, 1] <- gbutton("keep", container = NULL)
+  sl <- gslider(from = 0, to = 5, by = 1, value = 2, container = NULL)
+  lay[2, 1:2, expand = TRUE] <- sl
+  lay[2, 3] <- gbutton("extra", container = NULL)
+  expect_equal(length(lay$child_positions), 3L)
+
+  to_remove <- lapply(
+    Filter(function(item) any(item$x == 2L), lay$child_positions),
+    `[[`, "child"
+  )
+  expect_equal(length(to_remove), 2L)
+  for (child in to_remove)
+    lay$remove_child(child)
+
+  expect_equal(length(lay$child_positions), 1L)
+  expect_false(any(vapply(lay$child_positions, function(x) any(x$x == 2L), logical(1))))
+  dispose(w)
+})
+
 test_that("gnotebook and gstackwidget page switching", {
   w <- gwindow("nb", visible = FALSE)
   nb <- gnotebook(container = w)
