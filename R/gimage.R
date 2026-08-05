@@ -39,13 +39,8 @@ GImage <- setRefClass(
     get_value = function(...) image_name,
     set_value = function(value, ...) {
       image_name <<- value
-      if (file.exists(value)) {
-        gtkImageSetFromFile(widget, value)
-      } else {
-        icon <- stock_to_icon_name(value)
-        if (!is.null(icon))
-          gtkImageSetFromIconName(widget, icon)
-      }
+      gtk_image_apply_icon(widget, value, pixel_size = 16L)
+      invisible(NULL)
     },
     ## Observer signal "clicked" is logical; GtkImage has no clicked GObject signal.
     ensure_click_controller = function() {

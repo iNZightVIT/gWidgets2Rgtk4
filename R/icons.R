@@ -27,19 +27,10 @@ NULL
 ##' @method .getStockIconByName guiWidgetsToolkitRgtk4
 .getStockIconByName.guiWidgetsToolkitRgtk4 <- function(toolkit, name, ...) {
   sapply(name, function(icon) {
-    ## Prefer GTK4 theme names for known stock ids
-    mapped <- stock_to_icon_name(icon)
-    if (!is.null(mapped) && !identical(mapped, icon))
-      return(mapped)
-    ## Custom / gWidgets image files
-    tmp <- .GWidgetsRgtk4Icons$icons[[icon, exact = TRUE]]
-    if (is.null(tmp))
-      tmp <- .GWidgetsRgtk4Icons$icons[[sprintf("gw-%s", icon), exact = TRUE]]
-    if (!is.null(tmp))
-      return(tmp)
-    if (!is.null(mapped))
-      return(mapped)
-    ""
+    spec <- resolve_icon_spec(icon)
+    if (is.null(spec))
+      return("")
+    spec$src
   }, USE.NAMES = TRUE)
 }
 

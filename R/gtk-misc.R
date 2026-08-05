@@ -207,7 +207,44 @@ RtoGObjectConversion <- function(x) {
   "dialog-error" = "dialog-error",
   "dialog-warning" = "dialog-warning",
   "dialog-question" = "dialog-question",
-  "dialog-information" = "dialog-information"
+  "dialog-information" = "dialog-information",
+  ## Navigation / prefs (common in iNZight)
+  "go-back" = "go-previous",
+  "gtk-go-back" = "go-previous",
+  "go-forward" = "go-next",
+  "gtk-go-forward" = "go-next",
+  "go-up" = "go-up",
+  "gtk-go-up" = "go-up",
+  "go-down" = "go-down",
+  "gtk-go-down" = "go-down",
+  "1leftarrow" = "go-previous",
+  "1rightarrow" = "go-next",
+  "1uparrow" = "go-up",
+  "1downarrow" = "go-down",
+  "preferences" = "preferences-system",
+  "gtk-preferences" = "preferences-system",
+  "editor" = "accessories-text-editor",
+  "print" = "document-print",
+  "gtk-print" = "document-print"
+)
+
+## Prefer gWidgets2 gif files when an alias exists (theme lookup is flaky
+## with gtk_image_new_from_icon_name under Rgtk4).
+.icon_gif_aliases <- c(
+  "go-back" = "1leftarrow",
+  "gtk-go-back" = "1leftarrow",
+  "go-forward" = "1rightarrow",
+  "gtk-go-forward" = "1rightarrow",
+  "go-up" = "1uparrow",
+  "gtk-go-up" = "1uparrow",
+  "go-down" = "1downarrow",
+  "gtk-go-down" = "1downarrow",
+  "close" = "cancel",
+  "gtk-close" = "cancel",
+  "preferences" = "configure",
+  "gtk-preferences" = "configure",
+  "info" = "help",
+  "gtk-info" = "help"
 )
 
 stock_to_icon_name <- function(name) {
@@ -223,6 +260,102 @@ stock_to_icon_name <- function(name) {
     return(unname(.stock_to_icon_name[bare]))
   ## already looks like an icon theme name
   name
+}
+
+## Resolve a stock / gw / path name to list(kind, src) or NULL.
+resolve_icon_spec <- function(value) {
+  value <- as.character(value)[1]
+  if (is.na(value) || !nzchar(value))
+    return(NULL)
+  if (file.exists(value))
+    return(list(kind = "file", src = value))
+
+  ## gWidgets2 image registry (exact, bare, gw- prefixed, gif aliases)
+  keys <- unique(c(
+    value,
+    sub("^gw-", "", value),
+    paste0("gw-", value),
+    unname(.icon_gif_aliases[value]),
+    unname(.icon_gif_aliases[sub("^gw-", "", value)]),
+    paste0("gw-", unname(.icon_gif_aliases[value])),
+    paste0("gw-", unname(.icon_gif_aliases[sub("^gw-", "", value)]))
+  ))
+  keys <- keys[!is.na(keys) & nzchar(keys)]
+  for (key in keys) {
+    path <- tryCatch(
+      .GWidgetsRgtk4Icons$icons[[key, exact = TRUE]],
+      error = function(e) NULL
+    )
+    if (!is.null(path) && nzchar(path) && file.exists(path))
+      return(list(kind = "file", src = path))
+  }
+
+  ## Stock table / known theme name
+  nms <- names(.stock_to_icon_name)
+  bare <- sub("^(gtk|gw)-", "", value)
+  if (value %in% nms || bare %in% nms) {
+    icon <- stock_to_icon_name(value)
+    if (!is.null(icon) && nzchar(icon))
+      return(list(kind = "theme", src = icon))
+  }
+
+  ## Freedesktop name already (go-previous, document-open, …)
+  th <- tryCatch(gtkIconThemeGetForDisplay(gdkDisplayGetDefault()),
+                 error = function(e) NULL)
+  if (!is.null(th) && isTRUE(as.logical(gtkIconThemeHasIcon(th, value))))
+    return(list(kind = "theme", src = value))
+
+  NULL
+}
+
+## Build a GtkImage that actually paints under GTK4/Rgtk4.
+## gtk_image_new_from_icon_name often leaves paintable NULL; use icon-theme
+## lookup → paintable. Files go through GdkPixbuf so GIFs from gWidgets2 work.
+make_gtk_image <- function(src, kind = c("file", "theme"), pixel_size = 16L) {
+  kind <- match.arg(kind)
+  img <- gtkImageNew()
+  gtk_image_apply_icon(img, list(kind = kind, src = as.character(src)[1]),
+                       pixel_size = pixel_size)
+  img
+}
+
+## Apply a resolved icon spec (or raw stock/gw name) onto an existing GtkImage.
+gtk_image_apply_icon <- function(image, value, pixel_size = 16L) {
+  spec <- if (is.list(value) && !is.null(value$kind) && !is.null(value$src))
+    value
+  else
+    resolve_icon_spec(value)
+  if (is.null(spec))
+    return(invisible(FALSE))
+  if (identical(spec$kind, "file")) {
+    pb <- tryCatch(gdkPixbufNewFromFile(spec$src), error = function(e) NULL)
+    if (!is.null(pb))
+      gtkImageSetFromPixbuf(image, pb)
+    else
+      gtkImageSetFromFile(image, spec$src)
+  } else {
+    th <- tryCatch(gtkIconThemeGetForDisplay(gdkDisplayGetDefault()),
+                   error = function(e) NULL)
+    ip <- NULL
+    if (!is.null(th)) {
+      sz <- as.integer(pixel_size)[1]
+      if (is.na(sz) || sz < 1L) sz <- 16L
+      ip <- tryCatch(
+        gtkIconThemeLookupIcon(th, spec$src, NULL, sz, 1L, 0L, 0L),
+        error = function(e) NULL
+      )
+    }
+    if (!is.null(ip))
+      gtkImageSetFromPaintable(image, ip)
+    else
+      gtkImageSetFromIconName(image, spec$src)
+  }
+  if (!is.null(pixel_size) && length(pixel_size) >= 1L) {
+    psz <- as.integer(pixel_size)[1]
+    if (!is.na(psz) && psz > 0L)
+      try(gtkImageSetPixelSize(image, psz), silent = TRUE)
+  }
+  invisible(TRUE)
 }
 
 ## ---------------------------------------------------------------------------

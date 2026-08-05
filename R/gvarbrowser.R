@@ -185,8 +185,8 @@ GVarBrowser <- setRefClass(
           gtkLabelSetMarkup(label, sprintf("<b>%s</b>", node$label))
           gtkWidgetSetVisible(icon, FALSE)
         } else {
-          if (length(node$icon) && nzchar(node$icon[1])) {
-            gtkImageSetFromIconName(icon, node$icon[1])
+          if (length(node$icon) && nzchar(node$icon[1]) &&
+              isTRUE(gtk_image_apply_icon(icon, node$icon[1]))) {
             gtkWidgetSetVisible(icon, TRUE)
           } else {
             gtkWidgetSetVisible(icon, FALSE)

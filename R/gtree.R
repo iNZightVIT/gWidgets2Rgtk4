@@ -284,12 +284,8 @@ GTree <- setRefClass(
         icol <- host$icon_col
         if (!is.null(icol) && !is.null(node)) {
           stock <- as.character(node$row[[icol]])[1]
-          iname <- tryCatch(
-            .getStockIconByName(host$toolkit, stock),
-            error = function(e) stock
-          )
-          if (length(iname) && nzchar(iname[1])) {
-            gtkImageSetFromIconName(icon, iname[1])
+          if (length(stock) && nzchar(stock) && !is.na(stock) &&
+              isTRUE(gtk_image_apply_icon(icon, stock))) {
             gtkWidgetSetVisible(icon, TRUE)
           } else {
             gtkWidgetSetVisible(icon, FALSE)

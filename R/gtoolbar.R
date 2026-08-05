@@ -55,23 +55,35 @@ GToolBar <- setRefClass(
       style <- toolbar_style
       lab <- obj$get_value()
       icon <- obj$get_icon()
-      icon_name <- NULL
-      if (!is.null(icon) && !is_empty(icon))
-        icon_name <- stock_to_icon_name(icon)
-      if (is.null(icon_name) || !nzchar(icon_name))
-        icon_name <- stock_to_icon_name(lab)
-
       show_icon <- style %in% c("both", "icons", "both-horiz")
       show_text <- style %in% c("both", "text", "both-horiz")
 
-      if (show_icon && !is.null(icon_name) && nzchar(icon_name) && !file.exists(icon_name)) {
-        btn <- gtkButtonNewFromIconName(icon_name)
-        if (show_text)
-          gtkButtonSetLabel(btn, lab)
-      } else if (show_text || !show_icon) {
-        btn <- gtkButtonNewWithLabel(lab)
+      icon_spec <- NULL
+      if (show_icon) {
+        candidates <- character(0)
+        if (!is.null(icon) && !is_empty(icon))
+          candidates <- c(candidates, as.character(icon)[1])
+        if (!is_empty(lab))
+          candidates <- c(candidates, as.character(lab)[1])
+        for (cand in candidates) {
+          icon_spec <- resolve_icon_spec(cand)
+          if (!is.null(icon_spec))
+            break
+        }
+      }
+
+      has_icon <- !is.null(icon_spec)
+      has_text <- show_text && !is_empty(lab) && nzchar(as.character(lab)[1])
+      btn <- gtkButtonNew()
+      if (has_icon && has_text) {
+        box <- gtkBoxNew(.GtkOrientation$HORIZONTAL, 4L)
+        gtkBoxAppend(box, make_gtk_image(icon_spec$src, icon_spec$kind, 16L))
+        gtkBoxAppend(box, gtkLabelNew(as.character(lab)[1]))
+        gtkButtonSetChild(btn, box)
+      } else if (has_icon) {
+        gtkButtonSetChild(btn, make_gtk_image(icon_spec$src, icon_spec$kind, 16L))
       } else {
-        btn <- gtkButtonNewWithLabel(lab)
+        gtkButtonSetLabel(btn, if (has_text) as.character(lab)[1] else "")
       }
 
       tip <- obj$get_tooltip()

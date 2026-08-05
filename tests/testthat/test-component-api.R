@@ -116,6 +116,51 @@ test_that("gbutton set_icon from file path", {
   dispose(w)
 })
 
+test_that("gbutton set_icon keeps label and resolves gw-* to gif files", {
+  w <- gwindow("btn-stock", visible = FALSE)
+  b <- gbutton("Import data", container = w)
+  expect_equal(svalue(b), "Import data")
+  b$set_icon("gw-file")
+  ## Label must survive (GTK4 set_icon_name would wipe it)
+  expect_equal(svalue(b), "Import data")
+  expect_true(is.list(b$button_icon))
+  expect_equal(b$button_icon$kind, "file")
+  expect_true(file.exists(b$button_icon$src))
+  expect_match(b$button_icon$src, "file\\.gif$")
+  ## Child is a box with image + label, not a lone icon
+  child <- gtkButtonGetChild(b$widget)
+  expect_true(inherits(child, "GtkBox"))
+  img <- gtkWidgetGetFirstChild(child)
+  expect_false(is.null(gtkImageGetPaintable(img)))
+  ## Stock "ok" resolves via gWidgets gif registry (or theme fallback)
+  b2 <- gbutton("Save", container = w)
+  b2$set_icon("ok")
+  expect_equal(svalue(b2), "Save")
+  expect_true(b2$button_icon$kind %in% c("file", "theme"))
+  expect_true(nzchar(b2$button_icon$src))
+  ## Theme-only ids paint via icon-theme lookup (not from_icon_name)
+  b3 <- gbutton("", container = w)
+  b3$set_icon("new")
+  expect_equal(b3$button_icon$kind, "theme")
+  expect_false(is.null(gtkImageGetPaintable(gtkButtonGetChild(b3$widget))))
+  ## go-back aliases to gWidgets gif
+  expect_equal(resolve_icon_spec("go-back")$kind, "file")
+  ## Plain label is not treated as a missing theme icon
+  b4 <- gbutton("Hello", container = w)
+  expect_null(b4$button_icon)
+  expect_equal(svalue(b4), "Hello")
+  dispose(w)
+})
+
+test_that("getStockIconByName prefers registry files over passthrough names", {
+  skip_if_no_display()
+  expect_match(as.character(getStockIconByName("gw-file")), "file\\.gif$")
+  expect_match(as.character(getStockIconByName("file")), "file\\.gif$")
+  ## gtk-ok has no gif key; maps to theme name
+  expect_equal(as.character(getStockIconByName("gtk-ok")), "emblem-ok")
+  expect_equal(as.character(getStockIconByName("Import data")), "")
+})
+
 test_that("setPointerCursor applies css", {
   w <- gwindow("cur", visible = FALSE)
   b <- gbutton("x", container = w)
