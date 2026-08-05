@@ -20,12 +20,19 @@ GComboBox <- setRefClass(
   contains = "GWidget",
   fields = list(items = "ANY"),
   methods = list(
-    get_index = function(...) as.integer(gtkComboBoxGetActive(widget)) + 1L,
+    get_index = function(...) {
+      idx <- as.integer(gtkComboBoxGetActive(widget))
+      if (length(idx) < 1L || is.na(idx) || idx < 0L) NA_integer_ else idx + 1L
+    },
     set_index = function(value, ...) {
       value <- as.integer(value)[1]
       n <- get_length()
-      value <- min(max(0L, value), n)
-      gtkComboBoxSetActive(widget, value - 1L)
+      if (length(value) < 1L || is.na(value) || value < 1L) {
+        gtkComboBoxSetActive(widget, -1L)
+      } else {
+        value <- min(max(1L, value), max(n, 1L))
+        gtkComboBoxSetActive(widget, value - 1L)
+      }
     },
     get_length = function(...) length(items),
     add_handler_clicked = function(handler, action = NULL, ...) {
@@ -56,7 +63,7 @@ GComboBoxNoEntry <- setRefClass(
     },
     get_value = function(drop = TRUE, ...) {
       idx <- get_index()
-      if (is.na(idx) || idx < 1) "" else items[idx]
+      if (length(idx) < 1L || is.na(idx) || idx < 1L) "" else items[idx]
     },
     set_value = function(value, drop = TRUE, ...) {
       idx <- match(as.character(value)[1], items)
@@ -66,6 +73,8 @@ GComboBoxNoEntry <- setRefClass(
       if (missing(i)) items else items[i]
     },
     set_items = function(value, i, ...) {
+      block_observers()
+      on.exit(unblock_observers())
       vals <- value
       if (is.data.frame(vals) || is.matrix(vals))
         vals <- vals[, 1]
@@ -73,6 +82,8 @@ GComboBoxNoEntry <- setRefClass(
       gtkComboBoxTextRemoveAll(widget)
       for (it in items)
         gtkComboBoxTextAppendText(widget, it)
+      ## Match RGtk2: clear selection after replace (callers restore via set_value)
+      set_index(0L)
     }
   )
 )
@@ -114,6 +125,8 @@ GComboBoxWithEntry <- setRefClass(
       if (missing(i)) items else items[i]
     },
     set_items = function(value, i, ...) {
+      block_observers()
+      on.exit(unblock_observers())
       vals <- value
       if (is.data.frame(vals) || is.matrix(vals))
         vals <- vals[, 1]
@@ -121,6 +134,7 @@ GComboBoxWithEntry <- setRefClass(
       gtkComboBoxTextRemoveAll(widget)
       for (it in items)
         gtkComboBoxTextAppendText(widget, it)
+      set_index(0L)
     }
   )
 )
