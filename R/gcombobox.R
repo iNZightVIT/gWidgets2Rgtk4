@@ -34,6 +34,24 @@ GComboBox <- setRefClass(
         gtkComboBoxSetActive(widget, value - 1L)
       }
     },
+    apply_initial_selected = function(selected) {
+      ## RGtk2: selected=0 blanks; selected=integer(0)/NULL from which(...) with
+      ## no match effectively activated the first item via setActive coercion.
+      ## Keep selected=0 as blank; default empty/NA/NULL to index 1.
+      if (is.null(selected) || length(selected) < 1L) {
+        if (get_length() >= 1L) set_index(1L)
+        return(invisible(NULL))
+      }
+      sel <- as.integer(selected)[1]
+      if (length(sel) < 1L || is.na(sel)) {
+        if (get_length() >= 1L) set_index(1L)
+      } else if (sel > 0L) {
+        set_index(sel)
+      } else {
+        set_index(0L)
+      }
+      invisible(NULL)
+    },
     get_length = function(...) length(items),
     add_handler_clicked = function(handler, action = NULL, ...) {
       add_handler("changed", handler, action = action, ...)
@@ -54,9 +72,7 @@ GComboBoxNoEntry <- setRefClass(
       widget <<- gtkComboBoxTextNew()
       for (it in .self$items)
         gtkComboBoxTextAppendText(widget, it)
-      sel <- as.integer(selected)[1]
-      if (length(sel) == 1L && !is.na(sel) && sel > 0L)
-        set_index(sel)
+      apply_initial_selected(selected)
       initFields(block = widget, coerce_with = coerce.with, change_signal = "changed")
       add_to_parent(container, .self, ...)
       handler_id <<- add_handler_changed(handler, action)
@@ -102,9 +118,7 @@ GComboBoxWithEntry <- setRefClass(
       widget <<- gtkComboBoxTextNewWithEntry()
       for (it in .self$items)
         gtkComboBoxTextAppendText(widget, it)
-      sel <- as.integer(selected)[1]
-      if (length(sel) == 1L && !is.na(sel) && sel > 0L)
-        set_index(sel)
+      apply_initial_selected(selected)
       initFields(block = widget, coerce_with = coerce.with, change_signal = "changed")
       add_to_parent(container, .self, ...)
       handler_id <<- add_handler_changed(handler, action)

@@ -46,10 +46,16 @@ test_that("gslider discrete character and factor items", {
 test_that("gcombobox tolerates empty/NA/NULL selected", {
   w <- gwindow("cb-sel", visible = FALSE)
   items <- c("a", "b", "c")
+  ## which(...) with no match → integer(0); RGtk2 activated first item
   expect_error(cb0 <- gcombobox(items, selected = integer(0), container = w), NA)
-  expect_equal(svalue(cb0), "")
-  expect_error(gcombobox(items, selected = NA_integer_, container = w), NA)
-  expect_error(gcombobox(items, selected = NULL, container = w), NA)
+  expect_equal(svalue(cb0), "a")
+  expect_error(cb_na <- gcombobox(items, selected = NA_integer_, container = w), NA)
+  expect_equal(svalue(cb_na), "a")
+  expect_error(cb_null <- gcombobox(items, selected = NULL, container = w), NA)
+  expect_equal(svalue(cb_null), "a")
+  ## selected = 0 still means blank (RGtk2)
+  cb_blank <- gcombobox(items, selected = 0, container = w)
+  expect_equal(svalue(cb_blank), "")
   ## length-1 numeric path unchanged
   cb1 <- gcombobox(items, selected = 2, container = w)
   expect_equal(svalue(cb1), "b")
