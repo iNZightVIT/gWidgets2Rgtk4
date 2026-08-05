@@ -1,5 +1,31 @@
 # Toolkit TODO
 
+## P0 — Test blockers (GTK callback / hangs)
+
+From the interrupted iNZight `make test` run (2026-08-05). These escape into the GTK main loop (“Error in GTK callback function”) and can stall tests until `^C`. Fix before chasing downstream iNZight assertion mismatches (see `iNZight/docs/todo.md`).
+
+### `gslider` — discrete / non-numeric items
+
+- [ ] **`set_value` must not do arithmetic on factor/character `items`**
+  - File: [`R/gslider.R`](../R/gslider.R) — `which.min(abs(items - as.numeric(value)[1]))`
+  - Symptom: `non-numeric argument to binary operator` / `Ops.factor` + GTK callback error
+  - Trigger: iNZight subset sliders (`iNZControlWidget` builds `gslider(from = lev, …)` with factor levels, e.g. age bins)
+  - Seen in: Add to Plot, Code writing (G1/G2 steps — hung until `^C`)
+  - Fix: match RGtk2 discrete-slider behavior — when `items` are non-numeric, resolve index via `match()` / label equality (not numeric distance)
+  - Add unit test: character and factor `from` vectors round-trip `svalue<-` / `svalue`
+
+### `gcombobox` — length-zero `selected`
+
+- [ ] **Constructors must tolerate `selected = integer(0)` / `NA` / `NULL`**
+  - File: [`R/gcombobox.R`](../R/gcombobox.R) — `if (selected > 0)` in `GComboBoxNoEntry` and `GComboBoxWithEntry` initialize
+  - Symptom: `argument is of length zero`
+  - Trigger: iNZight `iNZPlotModWin` passes `selected = which(sizeMethods == curSet$resize.method)` when there is no match
+  - Failing iNZight tests: `test_code_writing.R` “size by” / “symbol by”
+  - Fix: treat empty/`NA`/`NULL` as no selection (or default index `1`); keep length-1 numeric path unchanged
+  - Add unit test: `gcombobox(items, selected = integer(0))` and `selected = NA` construct without error
+
+---
+
 ## `gmultiselect` — searchable multi-select with chips
 
 Add a Mantine-style [MultiSelect](https://mantine.dev/core/multi-select/) widget to **gWidgets2Rgtk4**: a searchable dropdown whose value is a character vector of removable chips. Values come from a fixed catalog (`items`), not freeform tags.
